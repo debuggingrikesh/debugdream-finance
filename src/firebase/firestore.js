@@ -39,10 +39,10 @@ export const addDocument = async (collectionName, data) => {
 
 export const updateDocument = async (collectionName, id, data) => {
   const ref = doc(db, collectionName, id)
-  await updateDoc(ref, {
+  await setDoc(ref, {
     ...data,
     updatedAt: serverTimestamp(),
-  })
+  }, { merge: true })
 }
 
 export const deleteDocument = async (collectionName, id) => {
@@ -54,12 +54,17 @@ export const getDocuments = async (collectionName, constraints = []) => {
     ? query(collection(db, collectionName), ...constraints)
     : collection(db, collectionName)
   const snapshot = await getDocs(q)
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+  return snapshot.docs.map(d => {
+    const data = d.data()
+    return { ...data, id: d.id } // Force d.id as the final 'id'
+  })
 }
 
 export const getDocument = async (collectionName, id) => {
   const snap = await getDoc(doc(db, collectionName, id))
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+  if (!snap.exists()) return null
+  const data = snap.data()
+  return { ...data, id: snap.id }
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -81,14 +86,22 @@ export const subscribeToCollection = (collectionName, callback, constraints = []
     ? query(collection(db, collectionName), ...constraints)
     : collection(db, collectionName)
   return onSnapshot(q, (snap) => {
-    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    const docs = snap.docs.map(d => {
+      const data = d.data()
+      return { ...data, id: d.id }
+    })
     callback(docs)
   })
 }
 
 export const subscribeToDocument = (collectionName, id, callback) => {
   return onSnapshot(doc(db, collectionName, id), (snap) => {
-    callback(snap.exists() ? { id: snap.id, ...snap.data() } : null)
+    if (!snap.exists()) {
+      callback(null)
+    } else {
+      const data = snap.data()
+      callback({ ...data, id: snap.id })
+    }
   })
 }
 

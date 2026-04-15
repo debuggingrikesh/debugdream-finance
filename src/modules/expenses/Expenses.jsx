@@ -160,8 +160,8 @@ export default function Expenses() {
       header: 'Date',
       render: (row) => (
         <div>
-          <div className="text-white text-sm font-body">{row.date}</div>
-          <div className="text-[#444] text-xs">{row.bsDay} {row.bsMonthName} {row.bsYear}</div>
+          <div className="text-text-primary text-sm font-body">{row.date}</div>
+          <div className="text-text-muted text-xs">{row.bsDay} {row.bsMonthName} {row.bsYear}</div>
         </div>
       )
     },
@@ -172,7 +172,7 @@ export default function Expenses() {
           'text-xs px-2 py-0.5 rounded-md font-body',
           row.type === 'cash_withdrawal'
             ? 'bg-yellow-500/10 text-yellow-400'
-            : 'bg-[#1a1a1a] text-[#888]'
+            : 'bg-bg-elevated text-text-secondary'
         )}>
           {row.category || '—'}
         </span>
@@ -180,7 +180,7 @@ export default function Expenses() {
     },
     {
       header: 'Description',
-      render: (row) => <span className="text-[#888] text-sm font-body">{row.description || '—'}</span>
+      render: (row) => <span className="text-text-secondary text-sm font-body">{row.description || '—'}</span>
     },
     {
       header: 'Source',
@@ -189,14 +189,14 @@ export default function Expenses() {
     {
       header: 'Amount',
       align: 'right',
-      render: (row) => <span className="font-mono text-white text-sm">-{formatNPR(row.amount)}</span>
+      render: (row) => <span className="font-mono text-text-primary text-sm">-{formatNPR(row.amount)}</span>
     },
     {
       header: '',
       render: (row) => (
         <button
           onClick={e => { e.stopPropagation(); setDeleteId(row.id) }}
-          className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-[#333] hover:text-red-400 transition-colors"
+          className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"
         >
           <Trash2 size={12} />
         </button>
@@ -223,15 +223,15 @@ export default function Expenses() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Total Expenses</div>
-          <div className="font-mono text-white text-xl font-bold">{formatNPR(totalExpenses)}</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Total Expenses</div>
+          <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(totalExpenses)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Bank</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
           <div className="font-mono text-blue-400 text-xl font-bold">{formatNPR(totalBank)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Cash</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
           <div className="font-mono text-yellow-400 text-xl font-bold">{formatNPR(totalCash)}</div>
         </Card>
       </div>
@@ -239,18 +239,18 @@ export default function Expenses() {
       {/* Category breakdown */}
       {catSummary.length > 0 && (
         <Card className="p-5">
-          <h3 className="font-display font-bold text-white text-sm mb-4">Category Breakdown · {monthLabel}</h3>
+          <h3 className="font-display font-bold text-text-primary text-sm mb-4">Category Breakdown · {monthLabel}</h3>
           <div className="space-y-2">
             {catSummary.map(([cat, amount]) => (
               <div key={cat} className="flex items-center gap-3">
-                <span className="text-sm font-body text-[#888] w-40 truncate shrink-0">{cat}</span>
-                <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                <span className="text-sm font-body text-text-secondary w-40 truncate shrink-0">{cat}</span>
+                <div className="flex-1 h-1.5 bg-bg-elevated rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#E8192C] rounded-full transition-all"
+                    className="h-full bg-accent rounded-full transition-all"
                     style={{ width: `${totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0}%` }}
                   />
                 </div>
-                <span className="font-mono text-white text-sm w-28 text-right shrink-0">{formatNPR(amount)}</span>
+                <span className="font-mono text-text-primary text-sm w-28 text-right shrink-0">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>
@@ -266,8 +266,8 @@ export default function Expenses() {
             className={clsx(
               'px-3 py-1 rounded-full text-xs font-body border transition-all',
               filterCat === c
-                ? 'bg-[#E8192C] text-white border-transparent'
-                : 'border-[#2a2a2a] text-[#555] hover:text-white hover:border-[#444]'
+                ? 'bg-accent text-text-primary border-transparent'
+                : 'border-border text-text-muted hover:text-text-primary hover:border-border-light'
             )}
           >
             {c === 'all' ? 'All categories' : c}
@@ -277,7 +277,7 @@ export default function Expenses() {
 
       {/* Table */}
       <Card className="p-5">
-        <h3 className="font-display font-bold text-white text-sm mb-4">
+        <h3 className="font-display font-bold text-text-primary text-sm mb-4">
           Transactions · {filtered.length} entries
         </h3>
         {filtered.length === 0 && !loading ? (
@@ -308,8 +308,8 @@ export default function Expenses() {
           <div className="grid grid-cols-2 gap-3">
             <Input label="Date (AD)" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#888] font-body font-medium uppercase tracking-wider">BS Date</label>
-              <div className="px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm font-body text-[#888]">
+              <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider">BS Date</label>
+              <div className="px-3 py-2 bg-bg-elevated border border-border rounded-lg text-sm font-body text-text-secondary">
                 {form.date ? (() => {
                   const bs = bsFromDate(form.date)
                   return bs ? `${bs.day} ${bs.monthName} ${bs.year}` : '—'
@@ -335,7 +335,7 @@ export default function Expenses() {
           <Input label="Amount (NPR)" type="number" prefix="NPR" value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0" />
 
           <div>
-            <label className="text-xs text-[#888] font-body font-medium uppercase tracking-wider block mb-2">Payment Source</label>
+            <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block mb-2">Payment Source</label>
             <div className="flex gap-2">
               {['bank', 'cash'].map(s => (
                 <button
@@ -344,8 +344,8 @@ export default function Expenses() {
                   className={clsx(
                     'flex-1 py-2.5 rounded-xl text-sm font-body border capitalize transition-all',
                     form.paymentSource === s
-                      ? 'bg-[#E8192C]/10 border-[#E8192C] text-[#E8192C]'
-                      : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#555] hover:text-white'
+                      ? 'bg-accent/10 border-accent text-accent'
+                      : 'bg-bg-elevated border-border text-text-muted hover:text-text-primary'
                   )}
                 >
                   {s === 'bank' ? '🏦 Bank' : '💵 Cash'}

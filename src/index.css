@@ -1,3 +1,48 @@
+/* ── Theme tokens ─────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+  --color-bg-primary:     #0a0a0a;
+  --color-bg-surface:     #111111;
+  --color-bg-elevated:    #1a1a1a;
+  --color-bg-hover:       #222222;
+  --color-border:         #2a2a2a;
+  --color-border-light:   #333333;
+  --color-text-primary:   #ffffff;
+  --color-text-secondary: #888888;
+  --color-text-muted:     #555555;
+  --color-accent:         #E8192C;
+  --color-accent-dim:     rgba(232, 25, 44, 0.10);
+}
+
+html.light {
+  color-scheme: light;
+  --color-bg-primary:     #f4f4f5;
+  --color-bg-surface:     #ffffff;
+  --color-bg-elevated:    #f0f0f1;
+  --color-bg-hover:       #e8e8ea;
+  --color-border:         #e2e2e5;
+  --color-border-light:   #d0d0d4;
+  --color-text-primary:   #0a0a0a;
+  --color-text-secondary: #52525b;
+  --color-text-muted:     #888890;
+  --color-accent:         #E8192C;
+  --color-accent-dim:     rgba(232, 25, 44, 0.08);
+}
+
+html.light body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+html.light select option {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,9 +59,10 @@
   }
 
   body {
-    background-color: #0a0a0a;
-    color: #ffffff;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
     font-family: 'DM Sans', sans-serif;
+    transition: background-color 0.2s ease, color 0.1s ease;
   }
 
   ::-webkit-scrollbar {
@@ -27,11 +73,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: var(--color-border);
     border-radius: 2px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3a3a3a;
+    background: var(--color-border-light);
   }
 
   input[type='number']::-webkit-inner-spin-button,
@@ -41,8 +87,8 @@
   }
 
   select option {
-    background: #1a1a1a;
-    color: #fff;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
   }
 }
 
@@ -62,6 +108,15 @@
   .text-npr {
     font-family: 'DM Mono', monospace;
     letter-spacing: -0.02em;
+  }
+
+  /* Hide scrollbar but keep scrollability */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 
   /* Grain texture overlay */
@@ -102,12 +157,10 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  /* Red accent line on cards */
   .card-accent-left {
     border-left: 3px solid #E8192C;
   }
 
-  /* Number display */
   .num {
     font-family: 'DM Mono', monospace;
     letter-spacing: -0.03em;

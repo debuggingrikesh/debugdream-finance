@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,24 +9,25 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary: '#0a0a0a',
-          surface: '#111111',
-          elevated: '#1a1a1a',
-          hover: '#222222',
+          primary: 'var(--color-bg-primary)',
+          surface: 'var(--color-bg-surface)',
+          elevated: 'var(--color-bg-elevated)',
+          hover: 'var(--color-bg-hover)',
         },
         accent: {
-          red: '#E8192C',
+          DEFAULT: 'var(--color-accent)',
+          red: 'var(--color-accent)',
           'red-light': '#ff4444',
-          'red-dim': '#E8192C1a',
+          'red-dim': 'var(--color-accent-dim)',
         },
         border: {
-          DEFAULT: '#2a2a2a',
-          light: '#333333',
+          DEFAULT: 'var(--color-border)',
+          light: 'var(--color-border-light)',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#888888',
-          muted: '#555555',
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
         },
         status: {
           success: '#22c55e',

@@ -147,7 +147,6 @@ After deploying, Firebase needs to whitelist your Vercel URL:
 | My Expenses | `/my-expenses` | Rikesh's personal expense tracker + reimbursement |
 | Payroll | `/payroll` | Nepal payroll calc, SSF, TDS, payslips |
 | Invoices | `/invoices` | Create/send/mark-paid, generate PDF |
-| Office Setup | `/office-setup` | Grouped capital purchase projects |
 | Salary Ledger | `/salary-ledger` | Rikesh's salary accrual + EMI deductions |
 | Inventory | `/inventory` | Office asset register |
 | Car Loan | `/car-loan` | EMI tracker, auto-linked from Expenses |

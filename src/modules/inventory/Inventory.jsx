@@ -52,15 +52,15 @@ export default function Inventory() {
   const openAdd = () => { setEditId(null); setForm(emptyItem()); setShowForm(true) }
 
   const columns = [
-    { header: 'Item', render: (r) => <div><div className="text-white text-sm font-body">{r.name}</div><div className="text-[#444] text-xs">{r.category}</div></div> },
-    { header: 'Qty', align: 'center', render: (r) => <span className="font-mono text-white text-sm">{r.quantity}</span> },
-    { header: 'Purchase Date', render: (r) => <span className="text-[#888] text-sm">{r.purchaseDate}</span> },
-    { header: 'Value', align: 'right', render: (r) => <span className="font-mono text-white text-sm">{formatNPR(r.purchaseValue)}</span> },
+    { header: 'Item', render: (r) => <div><div className="text-text-primary text-sm font-body">{r.name}</div><div className="text-text-muted text-xs">{r.category}</div></div> },
+    { header: 'Qty', align: 'center', render: (r) => <span className="font-mono text-text-primary text-sm">{r.quantity}</span> },
+    { header: 'Purchase Date', render: (r) => <span className="text-text-secondary text-sm">{r.purchaseDate}</span> },
+    { header: 'Value', align: 'right', render: (r) => <span className="font-mono text-text-primary text-sm">{formatNPR(r.purchaseValue)}</span> },
     { header: 'Condition', render: (r) => <Badge variant={CONDITION_CONFIG[r.condition] || 'default'}>{r.condition}</Badge> },
     { header: '', render: (r) => (
       <div className="flex gap-1">
-        <button onClick={e => { e.stopPropagation(); openEdit(r) }} className="w-7 h-7 rounded-lg hover:bg-[#1a1a1a] flex items-center justify-center text-[#444] hover:text-white transition-colors"><Pencil size={12} /></button>
-        <button onClick={e => { e.stopPropagation(); setDeleteId(r.id) }} className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-[#333] hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+        <button onClick={e => { e.stopPropagation(); openEdit(r) }} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"><Pencil size={12} /></button>
+        <button onClick={e => { e.stopPropagation(); setDeleteId(r.id) }} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
       </div>
     )},
   ]
@@ -72,12 +72,12 @@ export default function Inventory() {
 
       <div className="flex gap-3 flex-wrap">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..."
-          className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white font-body outline-none focus:border-[#E8192C] w-48" />
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white font-body outline-none focus:border-[#E8192C]">
+          className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent w-48" />
+        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
           <option value="all">All categories</option>
           {DEFAULT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
         </select>
-        <select value={filterCond} onChange={e => setFilterCond(e.target.value)} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white font-body outline-none focus:border-[#E8192C]">
+        <select value={filterCond} onChange={e => setFilterCond(e.target.value)} className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
           <option value="all">All conditions</option>
           {['Good', 'Fair', 'Needs Repair', 'Disposed'].map(c => <option key={c}>{c}</option>)}
         </select>

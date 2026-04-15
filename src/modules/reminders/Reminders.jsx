@@ -38,11 +38,11 @@ export default function Reminders() {
       <SectionHeader title="Reminders" subtitle={`${active.length} active alerts`}
         action={<Button size="sm" onClick={() => setShowAdd(true)} icon={Plus}>Add Reminder</Button>} />
 
-      <div className="flex gap-1 bg-[#111] border border-[#2a2a2a] rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1 w-fit">
         {[{ id: 'active', label: 'Active' }, { id: 'done', label: 'Done' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={clsx('px-4 py-2 rounded-lg text-sm font-body transition-all',
-              tab === t.id ? 'bg-[#E8192C] text-white' : 'text-[#555] hover:text-white')}>
+              tab === t.id ? 'bg-accent text-text-primary' : 'text-text-muted hover:text-text-primary')}>
             {t.label}
           </button>
         ))}
@@ -61,18 +61,18 @@ export default function Reminders() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
-                      r.status === 'done' ? 'bg-green-500/10 text-green-400' : overdue ? 'bg-red-500/10 text-red-400' : 'bg-[#1a1a1a] text-[#555]')}>
+                      r.status === 'done' ? 'bg-green-500/10 text-green-400' : overdue ? 'bg-red-500/10 text-red-400' : 'bg-bg-elevated text-text-muted')}>
                       {r.status === 'done' ? <CheckCircle size={14} /> : <Clock size={14} />}
                     </div>
                     <div>
-                      <div className="font-body font-medium text-white text-sm">{r.title}</div>
-                      {r.amount > 0 && <div className="font-mono text-[#E8192C] text-sm mt-0.5">{formatNPR(r.amount)}</div>}
+                      <div className="font-body font-medium text-text-primary text-sm">{r.title}</div>
+                      {r.amount > 0 && <div className="font-mono text-accent text-sm mt-0.5">{formatNPR(r.amount)}</div>}
                       {r.dueDate && (
-                        <div className={clsx('text-xs mt-0.5', overdue ? 'text-red-400' : 'text-[#444]')}>
+                        <div className={clsx('text-xs mt-0.5', overdue ? 'text-red-400' : 'text-text-muted')}>
                           {overdue ? '⚠ Overdue · ' : 'Due '}{r.dueDate}
                         </div>
                       )}
-                      {r.notes && <div className="text-xs text-[#444] mt-1">{r.notes}</div>}
+                      {r.notes && <div className="text-xs text-text-muted mt-1">{r.notes}</div>}
                       <div className="mt-1">
                         <Badge variant={r.type === 'tds' ? 'warning' : r.type === 'ssf' ? 'info' : 'default'}>
                           {r.type || 'manual'}
@@ -82,11 +82,11 @@ export default function Reminders() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {r.status !== 'done' && (
-                      <button onClick={() => markDone(r)} className="text-xs text-[#555] hover:text-green-400 border border-[#2a2a2a] hover:border-green-500/30 px-2.5 py-1.5 rounded-lg font-body transition-all flex items-center gap-1">
+                      <button onClick={() => markDone(r)} className="text-xs text-text-muted hover:text-green-400 border border-border hover:border-green-500/30 px-2.5 py-1.5 rounded-lg font-body transition-all flex items-center gap-1">
                         <CheckCircle size={11} /> Done
                       </button>
                     )}
-                    <button onClick={() => setDeleteId(r.id)} className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-[#333] hover:text-red-400 transition-colors">
+                    <button onClick={() => setDeleteId(r.id)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
                       <Trash2 size={12} />
                     </button>
                   </div>

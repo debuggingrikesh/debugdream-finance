@@ -3,115 +3,214 @@
  * Implements Nepal Income Tax, SSF rules as per IRD guidelines
  */
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants (FY 2080/81) ──────────────────────────────────────────────────
 export const SSF_EMPLOYEE_RATE = 0.11    // 11%
-export const SSF_EMPLOYER_RATE = 0.20    // 20%
-export const SSF_BASIC_CEILING = 50000   // NPR 50,000 max basic for SSF calc
+export const SSF_EMPLOYER_RATE = 0.20    // 20% (includes Gratuity, Accident, Medical)
 
-// TDS thresholds (annual)
-export const TDS_THRESHOLD_INDIVIDUAL = 500000   // NPR 5,00,000
-export const TDS_THRESHOLD_MARRIED = 600000      // NPR 6,00,000
-export const FEMALE_REBATE = 0.10                // 10%
+// TDS thresholds (Annual)
+export const TDS_THRESHOLD_SINGLE  = 500000   // NPR 5,00,000
+export const TDS_THRESHOLD_MARRIED = 600000   // NPR 6,00,000
 
-// Tax slabs (annual taxable income above threshold)
-export const TAX_SLABS = [
-  { limit: 200000, rate: 0.10 },  // Next 2L → 10%
-  { limit: 300000, rate: 0.20 },  // Next 3L → 20%
-  { limit: 1400000, rate: 0.30 }, // Next 14L → 30%
-  { limit: Infinity, rate: 0.36 },// Above 20L → 36%
-]
+// Deduction Caps (Annual)
+export const MAX_RETIREMENT_DEDUCTION = 500000 // SSF + CIT combined cap
+export const MAX_LIFE_INS_DEDUCTION   = 40000  // NPR 40,000
+export const MAX_HEALTH_INS_DEDUCTION = 20000  // NPR 20,000
+
+export const FEMALE_REBATE_RATE = 0.10         // 10% rebate on total tax
+
+// Remote Area Deductions (Annual)
+export const REMOTE_AREA_ALLOWANCE = {
+  'A': 50000,
+  'B': 40000,
+  'C': 30000,
+  'D': 20000,
+  'E': 10000,
+  'none': 0
+}
 
 /**
- * Calculate annual TDS given annual taxable income
- * @param {number} annualTaxable - Annual taxable income
- * @param {boolean} isMarried
- * @param {boolean} isFemale
- * @param {boolean} isSSFEnrolled - If true, 1% slab is waived
- * @returns {number} Annual TDS amount
+ * Calculate annual TDS based on precise Nepal Tax Slabs (2080/81)
  */
-export function calculateAnnualTDS(annualTaxable, isMarried = false, isFemale = false, isSSFEnrolled = true) {
-  const threshold = isMarried ? TDS_THRESHOLD_MARRIED : TDS_THRESHOLD_INDIVIDUAL
+export function calculateAnnualTax(taxableIncome, isMarried = false, isFemale = false, isSSFEnrolled = false) {
+  if (taxableIncome <= 0) return 0
+
+  const threshold = isMarried ? TDS_THRESHOLD_MARRIED : TDS_THRESHOLD_SINGLE
   
-  if (annualTaxable <= threshold) {
-    // Below threshold: 1% social security tax (waived if SSF enrolled)
-    if (isSSFEnrolled) return 0
-    return annualTaxable * 0.01
-  }
-
   let tax = 0
-  let remaining = annualTaxable - threshold
 
-  // Below threshold portion: 1% (waived if SSF enrolled)
+  // 1% Social Security Tax (Slab 1)
+  // Only applies to first slab for non-SSF contributors
+  const slab1Amount = Math.min(taxableIncome, threshold)
   if (!isSSFEnrolled) {
-    tax += threshold * 0.01
+    tax += slab1Amount * 0.01
   }
 
-  // Apply slabs on the amount above threshold
-  for (const slab of TAX_SLABS) {
-    if (remaining <= 0) break
-    const taxable = Math.min(remaining, slab.limit === Infinity ? remaining : slab.limit)
-    tax += taxable * slab.rate
-    remaining -= taxable
+  // 10% Slab (Up to 700k/800k)
+  const slab2End = threshold + 200000
+  if (taxableIncome > threshold) {
+    const slab2Amount = Math.min(taxableIncome, slab2End) - threshold
+    tax += slab2Amount * 0.10
   }
 
-  // Female rebate
-  if (isFemale) {
-    tax = tax * (1 - FEMALE_REBATE)
+  // 20% Slab (Up to 1.0M/1.1M)
+  const slab3End = slab2End + 300000
+  if (taxableIncome > slab2End) {
+    const slab3Amount = Math.min(taxableIncome, slab3End) - slab2End
+    tax += slab3Amount * 0.20
+  }
+
+  // 30% Slab (Fixed checkpoint at 2,000,000 total income)
+  const slab4End = 2000000
+  if (taxableIncome > slab3End) {
+    const slab4Amount = Math.min(taxableIncome, slab4End) - slab3End
+    tax += slab4Amount * 0.30
+  }
+
+  // 36% Slab (Fixed checkpoint at 5,000,000 total income)
+  const slab5End = 5000000
+  if (taxableIncome > slab4End) {
+    const slab5Amount = Math.min(taxableIncome, slab5End) - slab4End
+    tax += slab5Amount * 0.36
+  }
+
+  // 39% Slab (Above 5,000,000)
+  if (taxableIncome > slab5End) {
+    const slab6Amount = taxableIncome - slab5End
+    tax += slab6Amount * 0.39
+  }
+
+  // Female rebate: 10% reduction of total tax liability
+  if (isFemale && !isMarried) {
+    tax = tax * (1 - FEMALE_REBATE_RATE)
   }
 
   return Math.round(tax)
 }
 
 /**
- * Calculate monthly payroll for a full-time employee
- * @param {Object} employee
- * @returns {Object} Full breakdown
+ * Calculate full breakdown for an employee using Cumulative Step-up Method
  */
-export function calculateFullTimePayroll(employee) {
-  const { ctc, isMarried = false, gender = 'male', allowances = [] } = employee
+export function calculateFullTimePayroll(employee, ytdData = {}) {
+  const { 
+    ctc, 
+    isMarried = false, 
+    gender = 'male', 
+    allowances = [],
+    citMonthly = 0,
+    lifeInsAnnual = 0,
+    healthInsAnnual = 0,
+    isSSFEnrolled = false,
+    remoteCategory = 'none',
+  } = employee
+
+  const {
+    ytdTaxableIncome = 0,
+    ytdTaxPaid = 0
+  } = ytdData
+
   const isFemale = gender === 'female'
+  const monthlyAllowance = (allowances || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0)
 
-  // Basic salary
-  const basic = Math.round(ctc / 1.20)
+  // 1. Derive Monthly Earnings
+  const divisor = isSSFEnrolled ? 1.2 : 1.0
+  const basic = Math.round((ctc - monthlyAllowance) / divisor)
+  const grossPayMonthly = basic + monthlyAllowance
+  
+  // 2. SSF Contributions
+  const employeeSSFMonthly = isSSFEnrolled ? Math.round(basic * SSF_EMPLOYEE_RATE) : 0
+  const employerSSFMonthly = isSSFEnrolled ? Math.round(basic * SSF_EMPLOYER_RATE) : 0
 
-  // SSF (capped at 50K basic)
-  const ssfBasic = Math.min(basic, SSF_BASIC_CEILING)
-  const employerSSF = Math.round(ssfBasic * SSF_EMPLOYER_RATE)
-  const employeeSSF = Math.round(ssfBasic * SSF_EMPLOYEE_RATE)
+  // 3. Monthly Deductions
+  const citContribution = parseFloat(citMonthly) || 0
+  const deductibleRetirementMonthly = Math.min(employeeSSFMonthly + citContribution, (grossPayMonthly / 3))
 
-  // Verify: basic + employerSSF ≈ CTC
-  // basic * 1.20 = CTC → basic + basic*0.20 = CTC ✓
+  // 4. Remote Area & Insurance (Pro-rated monthly if needed, or fully deducted)
+  // IRD allows these annual deductions. In cumulative method, we apply them against the annual taxable base.
+  const remoteAllowanceAnnual = REMOTE_AREA_ALLOWANCE[remoteCategory] || 0
+  const deductibleLifeAnnual   = Math.min(parseFloat(lifeInsAnnual) || 0, MAX_LIFE_INS_DEDUCTION)
+  const deductibleHealthAnnual = Math.min(parseFloat(healthInsAnnual) || 0, MAX_HEALTH_INS_DEDUCTION)
 
-  // Allowances total
-  const allowanceTotal = allowances.reduce((sum, a) => sum + (a.amount || 0), 0)
+  // 5. Calculate This Month's Taxable Income
+  const currentTaxableIncome = Math.max(0, grossPayMonthly - deductibleRetirementMonthly)
 
-  // Gross pay
-  const grossPay = basic + allowanceTotal
+  // 6. Cumulative Step-up Calculation
+  const totalTaxableIncomeYTD = ytdTaxableIncome + currentTaxableIncome
+  
+  // Target total tax liability for income earned so far
+  // We apply annual slabs directly to the YTD income. 
+  // (e.g. if YTD is 400k, tax is 1% of 400k. If YTD is 600k, tax is (5k + 10k)).
+  let targetAnnualTax = calculateAnnualTax(totalTaxableIncomeYTD, isMarried, isFemale, isSSFEnrolled)
+  
+  // Medical Tax Credit (Applied against the target tax)
+  const medicalTaxCredit = Math.min(0.15 * (parseFloat(healthInsAnnual) || 0), 750)
+  const targetNetTax = Math.max(0, targetAnnualTax - medicalTaxCredit)
 
-  // Annual taxable (excluding employee SSF)
-  const annualTaxable = (grossPay - employeeSSF) * 12
+  // TDS this month = What we should have paid so far - What we actually paid
+  const cumulativeTDSMatched = targetNetTax
+  const monthlyTDS = Math.max(0, Math.round(cumulativeTDSMatched - ytdTaxPaid))
 
-  // Annual TDS
-  const annualTDS = calculateAnnualTDS(annualTaxable, isMarried, isFemale, true)
-  const monthlyTDS = Math.round(annualTDS / 12)
-
-  // Net take-home
-  const netPay = grossPay - employeeSSF - monthlyTDS
+  // 7. Net Take-Home
+  const netPayMonthly = grossPayMonthly - employeeSSFMonthly - citContribution - monthlyTDS
 
   return {
     basic,
-    allowanceTotal,
-    allowances,
-    grossPay,
-    employeeSSF,
-    employerSSF,
-    annualTaxable,
-    annualTDS,
+    monthlyAllowance,
+    grossPayMonthly,
+    employeeSSFMonthly,
+    employerSSFMonthly,
+    citMonthly: citContribution,
+    lifeInsAnnual: parseFloat(lifeInsAnnual) || 0,
+    healthInsAnnual: parseFloat(healthInsAnnual) || 0,
+    remoteCategory,
+    remoteAllowanceAnnual,
+    medicalTaxCredit,
+    currentTaxableIncome,
+    totalTaxableIncomeYTD,
+    ytdTaxPaid,
+    targetNetTax,
+    annualTDS: targetNetTax, // For UI label consistency
     monthlyTDS,
-    netPay,
-    totalCTC: basic + employerSSF, // should equal ctc
-    isSSFEnrolled: true,
+    netPayMonthly,
+    totalCTC: grossPayMonthly + employerSSFMonthly,
+    isSSFEnrolled,
+    // Compatibility fields
+    grossPay: grossPayMonthly,
+    netPay: netPayMonthly,
+    employeeSSF: employeeSSFMonthly,
+    employerSSF: employerSSFMonthly,
   }
+}
+
+/**
+ * Utility to identify Fiscal Year months for Nepal (Starts Shrawan/04)
+ * Returns array of monthKeys that precede currentMonthKey in the same FY
+ */
+export function getFiscalYearPreviousMonths(currentMonthKey) {
+  const [year, month] = currentMonthKey.split('-').map(Number)
+  const previousMonths = []
+  
+  // FY starts in month 04. 
+  // If current month is 04, prev is empty.
+  // If current month is 08, prev are 04, 05, 06, 07.
+  // If current month is 02 (next AD year), prev are 04..12 of prev year + 01.
+  
+  let checkYear = month >= 4 ? year : year - 1
+  let checkMonth = 4
+  
+  while (true) {
+    const key = `${checkYear}-${checkMonth.toString().padStart(2, '0')}`
+    if (key === currentMonthKey) break
+    
+    previousMonths.push(key)
+    
+    checkMonth++
+    if (checkMonth > 12) {
+      checkMonth = 1
+      checkYear++
+    }
+  }
+  
+  return previousMonths
 }
 
 /**
@@ -143,10 +242,10 @@ export function calculateRikeshPayroll(employee, carLoanEMI = 62372) {
   const base = calculateFullTimePayroll(employee)
   return {
     ...base,
-    monthlyTDS: 0, // Not calculated monthly
-    netAccrued: base.grossPay - base.employeeSSF, // Without TDS
+    monthlyTDS: base.monthlyTDS, // Calculate monthly TDS normally
+    netAccrued: base.grossPayMonthly - base.employeeSSFMonthly - base.monthlyTDS,
     carLoanEMI,
-    netAfterEMI: base.grossPay - base.employeeSSF - carLoanEMI,
+    netAfterEMI: base.grossPayMonthly - base.employeeSSFMonthly - base.monthlyTDS - carLoanEMI,
     isSpecial: true,
   }
 }
@@ -157,7 +256,7 @@ export function calculateRikeshPayroll(employee, carLoanEMI = 62372) {
 export function calculateTDSOnPayment(amount, isMarried = false) {
   // Treat this payment as taxable income, calculate applicable TDS
   const annualized = amount * 12
-  const annual = calculateAnnualTDS(annualized, isMarried, false, true)
+  const annual = calculateAnnualTax(annualized, isMarried, false, true)
   return Math.round(annual / 12)
 }
 

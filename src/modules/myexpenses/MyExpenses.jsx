@@ -121,14 +121,14 @@ export default function MyExpenses() {
       header: 'Date',
       render: (row) => (
         <div>
-          <div className="text-white text-sm">{row.date}</div>
-          <div className="text-[#444] text-xs">{row.bsDay} — {row.bsMonth}</div>
+          <div className="text-text-primary text-sm">{row.date}</div>
+          <div className="text-text-muted text-xs">{row.bsDay} — {row.bsMonth}</div>
         </div>
       )
     },
     { header: 'Category', render: (row) => <Badge>{row.category}</Badge> },
-    { header: 'Note', render: (row) => <span className="text-[#888] text-sm">{row.note || '—'}</span> },
-    { header: 'Amount', align: 'right', render: (row) => <span className="font-mono text-white text-sm">{formatNPR(row.amount)}</span> },
+    { header: 'Note', render: (row) => <span className="text-text-secondary text-sm">{row.note || '—'}</span> },
+    { header: 'Amount', align: 'right', render: (row) => <span className="font-mono text-text-primary text-sm">{formatNPR(row.amount)}</span> },
   ]
 
   return (
@@ -136,14 +136,14 @@ export default function MyExpenses() {
       <SectionHeader title="My Expenses" subtitle="Rikesh's personal expense tracker & reimbursement" />
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#111] border border-[#2a2a2a] rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1 w-fit">
         {[{ id: 'active', label: 'Active Month' }, { id: 'history', label: 'History' }].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
               'px-4 py-2 rounded-lg text-sm font-body transition-all',
-              activeTab === tab.id ? 'bg-[#E8192C] text-white' : 'text-[#555] hover:text-white'
+              activeTab === tab.id ? 'bg-accent text-text-primary' : 'text-text-muted hover:text-text-primary'
             )}
           >
             {tab.label}
@@ -154,14 +154,14 @@ export default function MyExpenses() {
       {activeTab === 'active' && (
         <>
           {/* Active month total */}
-          <Card className="p-6 border-l-4 border-l-[#E8192C]">
+          <Card className="p-6 border-l-4 border-l-accent">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">
+                <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">
                   {currentMonth?.monthLabel || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
                 </div>
-                <div className="font-mono text-white text-3xl font-bold">{formatNPR(activeTotal)}</div>
-                <div className="text-xs text-[#444] font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
+                <div className="font-mono text-text-primary text-3xl font-bold">{formatNPR(activeTotal)}</div>
+                <div className="text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
               </div>
               <div className="flex flex-col gap-2">
                 <Button onClick={() => setShowAdd(true)} icon={Plus}>Add Expense</Button>
@@ -176,7 +176,7 @@ export default function MyExpenses() {
 
           {/* Entries */}
           <Card className="p-5">
-            <h3 className="font-display font-bold text-white text-sm mb-4">This Month's Entries</h3>
+            <h3 className="font-display font-bold text-text-primary text-sm mb-4">This Month's Entries</h3>
             {activeEntries.length === 0 ? (
               <EmptyState
                 icon={Wallet}
@@ -195,9 +195,9 @@ export default function MyExpenses() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Month list */}
           <Card className="p-4">
-            <h3 className="font-display font-bold text-white text-sm mb-3">Closed Months</h3>
+            <h3 className="font-display font-bold text-text-primary text-sm mb-3">Closed Months</h3>
             {closedMonths.length === 0 ? (
-              <p className="text-[#333] text-sm font-body text-center py-6">No closed months yet</p>
+              <p className="text-text-muted text-sm font-body text-center py-6">No closed months yet</p>
             ) : (
               <div className="space-y-1">
                 {closedMonths.map(m => (
@@ -207,8 +207,8 @@ export default function MyExpenses() {
                     className={clsx(
                       'w-full flex items-center justify-between p-2.5 rounded-xl transition-all font-body text-sm',
                       selectedHistory?.id === m.id
-                        ? 'bg-[#E8192C]/10 text-[#E8192C]'
-                        : 'text-[#888] hover:bg-[#1a1a1a] hover:text-white'
+                        ? 'bg-accent/10 text-accent'
+                        : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
                     )}
                   >
                     <span>{m.monthLabel}</span>
@@ -225,21 +225,21 @@ export default function MyExpenses() {
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-display font-bold text-white text-base">{selectedHistory.monthLabel}</h3>
+                    <h3 className="font-display font-bold text-text-primary text-base">{selectedHistory.monthLabel}</h3>
                     <div className="text-xs text-green-400 font-body flex items-center gap-1 mt-0.5">
                       <CheckCircle size={10} /> Reimbursed via {selectedHistory.reimbursementSource}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs text-[#555]">Total Reimbursed</div>
-                    <div className="font-mono text-white text-xl font-bold">{formatNPR(selectedHistory.total)}</div>
+                    <div className="text-xs text-text-muted">Total Reimbursed</div>
+                    <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(selectedHistory.total)}</div>
                   </div>
                 </div>
                 <Table columns={activeColumns} data={historyEntries} emptyMessage="No entries for this month" />
               </Card>
             ) : (
               <Card className="p-8 flex items-center justify-center">
-                <p className="text-[#333] text-sm font-body">Select a month to view details</p>
+                <p className="text-text-muted text-sm font-body">Select a month to view details</p>
               </Card>
             )}
           </div>
@@ -283,25 +283,25 @@ export default function MyExpenses() {
         }
       >
         <div className="space-y-4">
-          <div className="p-4 bg-[#1a1a1a] rounded-xl text-center">
-            <div className="text-xs text-[#555] font-body mb-1">Total to reimburse</div>
-            <div className="font-mono text-white text-2xl font-bold">{formatNPR(activeTotal)}</div>
-            <div className="text-xs text-[#444] mt-1">{activeEntries.length} entries</div>
+          <div className="p-4 bg-bg-elevated rounded-xl text-center">
+            <div className="text-xs text-text-muted font-body mb-1">Total to reimburse</div>
+            <div className="font-mono text-text-primary text-2xl font-bold">{formatNPR(activeTotal)}</div>
+            <div className="text-xs text-text-muted mt-1">{activeEntries.length} entries</div>
           </div>
           <div>
-            <label className="text-xs text-[#888] font-body font-medium uppercase tracking-wider block mb-2">Reimbursement Source</label>
+            <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block mb-2">Reimbursement Source</label>
             <div className="flex gap-2">
               {['bank', 'cash'].map(s => (
                 <button key={s} onClick={() => setReimbursementSource(s)}
                   className={clsx('flex-1 py-2.5 rounded-xl text-sm font-body border capitalize transition-all',
-                    reimbursementSource === s ? 'bg-[#E8192C]/10 border-[#E8192C] text-[#E8192C]' : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#555]'
+                    reimbursementSource === s ? 'bg-accent/10 border-accent text-accent' : 'bg-bg-elevated border-border text-text-muted'
                   )}>
                   {s === 'bank' ? '🏦 Bank' : '💵 Cash'}
                 </button>
               ))}
             </div>
           </div>
-          <p className="text-xs text-[#444] font-body">
+          <p className="text-xs text-text-muted font-body">
             This will create a "Personal Reimbursement – Rikesh" entry in Company Expenses and lock this month as read-only.
           </p>
         </div>

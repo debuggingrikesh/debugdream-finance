@@ -131,18 +131,18 @@ export default function Income() {
       header: 'Date',
       render: (row) => (
         <div>
-          <div className="text-white text-sm font-body">{row.date}</div>
-          <div className="text-[#444] text-xs">{row.bsDay} {row.bsMonthName} {row.bsYear}</div>
+          <div className="text-text-primary text-sm font-body">{row.date}</div>
+          <div className="text-text-muted text-xs">{row.bsDay} {row.bsMonthName} {row.bsYear}</div>
         </div>
       )
     },
     {
       header: 'Client',
-      render: (row) => <span className="font-body text-white text-sm">{row.clientName || '—'}</span>
+      render: (row) => <span className="font-body text-text-primary text-sm">{row.clientName || '—'}</span>
     },
     {
       header: 'Description',
-      render: (row) => <span className="text-[#888] text-sm font-body truncate max-w-[180px] block">{row.description || '—'}</span>
+      render: (row) => <span className="text-text-secondary text-sm font-body truncate max-w-[180px] block">{row.description || '—'}</span>
     },
     {
       header: 'Source',
@@ -158,7 +158,7 @@ export default function Income() {
       render: (row) => (
         <button
           onClick={e => { e.stopPropagation(); setDeleteId(row.id) }}
-          className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-[#333] hover:text-red-400 transition-colors"
+          className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"
         >
           <Trash2 size={12} />
         </button>
@@ -182,15 +182,15 @@ export default function Income() {
       {/* ── Summary cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Total Income</div>
-          <div className="font-mono text-white text-xl font-bold">{formatNPR(totalIncome)}</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Total Income</div>
+          <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(totalIncome)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Bank</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
           <div className="font-mono text-blue-400 text-xl font-bold">{formatNPR(totalBank)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-[#555] font-body uppercase tracking-wider mb-1">Cash</div>
+          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
           <div className="font-mono text-yellow-400 text-xl font-bold">{formatNPR(totalCash)}</div>
         </Card>
       </div>
@@ -204,8 +204,8 @@ export default function Income() {
             className={clsx(
               'px-3 py-1 rounded-full text-xs font-body border transition-all',
               filterClient === c
-                ? 'bg-[#E8192C] text-white border-transparent'
-                : 'border-[#2a2a2a] text-[#555] hover:text-white hover:border-[#444]'
+                ? 'bg-accent text-text-primary border-transparent'
+                : 'border-border text-text-muted hover:text-text-primary hover:border-border-light'
             )}
           >
             {c === 'all' ? 'All clients' : c}
@@ -216,18 +216,18 @@ export default function Income() {
       {/* Client summary */}
       {clientSummary.length > 0 && (
         <Card className="p-5">
-          <h3 className="font-display font-bold text-white text-sm mb-4">Client Summary · {monthLabel}</h3>
+          <h3 className="font-display font-bold text-text-primary text-sm mb-4">Client Summary · {monthLabel}</h3>
           <div className="space-y-2">
             {clientSummary.map(([client, amount]) => (
               <div key={client} className="flex items-center gap-3">
-                <span className="text-sm font-body text-[#888] w-24 truncate">{client}</span>
-                <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                <span className="text-sm font-body text-text-secondary w-24 truncate">{client}</span>
+                <div className="flex-1 h-1.5 bg-bg-elevated rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#E8192C] rounded-full"
+                    className="h-full bg-accent rounded-full"
                     style={{ width: `${totalIncome > 0 ? (amount / totalIncome) * 100 : 0}%` }}
                   />
                 </div>
-                <span className="font-mono text-white text-sm w-28 text-right">{formatNPR(amount)}</span>
+                <span className="font-mono text-text-primary text-sm w-28 text-right">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>
@@ -236,7 +236,7 @@ export default function Income() {
 
       {/* ── Transactions table ─────────────────────────────────────────────── */}
       <Card className="p-5">
-        <h3 className="font-display font-bold text-white text-sm mb-4">
+        <h3 className="font-display font-bold text-text-primary text-sm mb-4">
           Transactions · {filtered.length} entries
         </h3>
         {filtered.length === 0 && !loading ? (
@@ -268,8 +268,8 @@ export default function Income() {
           <div className="grid grid-cols-2 gap-3">
             <Input label="Date (AD)" type="date" value={form.date} onChange={e => handleDateChange(e.target.value)} />
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[#888] font-body font-medium uppercase tracking-wider">BS Date</label>
-              <div className="px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm font-body text-[#888]">
+              <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider">BS Date</label>
+              <div className="px-3 py-2 bg-bg-elevated border border-border rounded-lg text-sm font-body text-text-secondary">
                 {form.date ? (() => {
                   const bs = bsFromDate(form.date)
                   return bs ? `${bs.day} ${bs.monthName} ${bs.year}` : '—'
@@ -298,7 +298,7 @@ export default function Income() {
 
           {/* Payment source */}
           <div>
-            <label className="text-xs text-[#888] font-body font-medium uppercase tracking-wider block mb-2">Payment Received Via</label>
+            <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block mb-2">Payment Received Via</label>
             <div className="flex gap-2">
               {['bank', 'cash'].map(s => (
                 <button
@@ -307,8 +307,8 @@ export default function Income() {
                   className={clsx(
                     'flex-1 py-2.5 rounded-xl text-sm font-body border capitalize transition-all',
                     form.paymentSource === s
-                      ? 'bg-[#E8192C]/10 border-[#E8192C] text-[#E8192C]'
-                      : 'bg-[#1a1a1a] border-[#2a2a2a] text-[#555] hover:text-white'
+                      ? 'bg-accent/10 border-accent text-accent'
+                      : 'bg-bg-elevated border-border text-text-muted hover:text-text-primary'
                   )}
                 >
                   {s === 'bank' ? '🏦 Bank' : '💵 Cash'}

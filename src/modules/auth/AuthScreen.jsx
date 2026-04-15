@@ -2,11 +2,11 @@ import { Chrome } from 'lucide-react'
 
 export default function AuthScreen({ onSignIn, error }) {
   return (
-    <div className="h-screen bg-[#0a0a0a] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-screen bg-bg-primary flex items-center justify-center p-6 relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[#E8192C]/5 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 rounded-full bg-[#E8192C]/3 blur-[80px]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-72 h-72 rounded-full bg-accent/3 blur-[80px]" />
         {/* Grid lines */}
         <div className="absolute inset-0" style={{
           backgroundImage: 'linear-gradient(rgba(42,42,42,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(42,42,42,0.3) 1px, transparent 1px)',
@@ -17,23 +17,23 @@ export default function AuthScreen({ onSignIn, error }) {
       <div className="relative w-full max-w-sm animate-fade-in">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-[#111] border border-[#2a2a2a] flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(232,25,44,0.15)]">
+          <div className="w-16 h-16 rounded-2xl bg-bg-surface border border-border flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(232,25,44,0.15)]">
             <div className="flex flex-col leading-none">
-              <span className="font-display font-black text-white text-xl">D</span>
+              <span className="font-display font-black text-text-primary text-xl">D</span>
             </div>
           </div>
           <div className="text-center">
-            <div className="font-display font-black text-3xl text-white tracking-tight leading-none">
-              debug<span className="text-[#E8192C]">dream</span>
+            <div className="font-display font-black text-3xl text-text-primary tracking-tight leading-none">
+              debug<span className="text-accent">dream</span>
             </div>
-            <div className="text-[#444] text-sm font-body mt-2">Finance · Internal</div>
+            <div className="text-text-muted text-sm font-body mt-2">Finance · Internal</div>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl p-8 shadow-[0_25px_50px_rgba(0,0,0,0.6)]">
-          <h1 className="font-display font-bold text-xl text-white mb-1">Sign in</h1>
-          <p className="text-sm text-[#555] font-body mb-6">
+        <div className="bg-bg-surface border border-border rounded-2xl p-8 shadow-[0_25px_50px_rgba(0,0,0,0.6)]">
+          <h1 className="font-display font-bold text-xl text-text-primary mb-1">Sign in</h1>
+          <p className="text-sm text-text-muted font-body mb-6">
             Single-user access · Rikesh Karmacharya
           </p>
 
@@ -57,7 +57,7 @@ export default function AuthScreen({ onSignIn, error }) {
             Continue with Google
           </button>
 
-          <p className="mt-5 text-center text-xs text-[#333] font-body">
+          <p className="mt-5 text-center text-xs text-text-muted font-body">
             Access restricted to authorized email only
           </p>
         </div>

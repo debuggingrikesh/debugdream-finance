@@ -137,21 +137,3 @@ export function useCarLoan() {
   return { setup, payments, totalPaid, outstanding, loading }
 }
 
-// ── Office Setup ──────────────────────────────────────────────────────────────
-export function useOfficeSetup() {
-  const [projects, setProjects] = useState([])
-  const [transactions, setTransactions] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const unsubProjects = subscribeToCollection('officeSetup', setProjects)
-    const unsubTx = subscribeToCollection('officeSetupTransactions', (docs) => {
-      const sorted = [...docs].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-      setTransactions(sorted)
-      setLoading(false)
-    })
-    return () => { unsubProjects(); unsubTx() }
-  }, [])
-
-  return { projects, transactions, loading }
-}

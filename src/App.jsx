@@ -12,7 +12,6 @@ import Expenses from './modules/expenses/Expenses'
 import MyExpenses from './modules/myexpenses/MyExpenses'
 import Payroll from './modules/payroll/Payroll'
 import Invoices from './modules/invoices/Invoices'
-import OfficeSetup from './modules/officesetup/OfficeSetup'
 import SalaryLedger from './modules/salaryledger/SalaryLedger'
 import Inventory from './modules/inventory/Inventory'
 import CarLoan from './modules/carloan/CarLoan'
@@ -26,12 +25,12 @@ const ALLOWED_EMAIL = import.meta.env.VITE_ALLOWED_EMAIL || 'rikesh@debugdream.c
 // ── Splash shown while Firebase auth initialises ──────────────────────────────
 function Splash() {
   return (
-    <div className="h-screen flex items-center justify-center bg-[#0a0a0a]">
+    <div className="h-screen flex items-center justify-center bg-bg-primary">
       <div className="flex flex-col items-center gap-5">
-        <div className="w-12 h-12 rounded-2xl bg-[#111] border border-[#2a2a2a] flex items-center justify-center shadow-[0_0_30px_rgba(232,25,44,0.15)]">
-          <span className="font-display font-black text-[#E8192C] text-xl">D</span>
+        <div className="w-12 h-12 rounded-2xl bg-bg-surface border border-border flex items-center justify-center shadow-[0_0_30px_rgba(232,25,44,0.15)]">
+          <span className="font-display font-black text-accent text-xl">D</span>
         </div>
-        <Loader2 size={18} className="animate-spin text-[#333]" />
+        <Loader2 size={18} className="animate-spin text-text-muted" />
       </div>
     </div>
   )
@@ -62,7 +61,6 @@ function AppRoutes({ onSignOut }) {
         <Route path="my-expenses" element={<MyExpenses />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="invoices" element={<Invoices />} />
-        <Route path="office-setup" element={<OfficeSetup />} />
         <Route path="salary-ledger" element={<SalaryLedger />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="car-loan" element={<CarLoan />} />

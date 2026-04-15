@@ -93,14 +93,14 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-6">
       <div className="w-full max-w-xl animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="font-display font-black text-2xl text-white mb-1">
-            debug<span className="text-[#E8192C]">dream</span> Finance
+          <div className="font-display font-black text-2xl text-text-primary mb-1">
+            debug<span className="text-accent">dream</span> Finance
           </div>
-          <p className="text-[#555] text-sm font-body">First-time setup · Step {step} of {STEPS.length}</p>
+          <p className="text-text-muted text-sm font-body">First-time setup · Step {step} of {STEPS.length}</p>
         </div>
 
         {/* Step indicators */}
@@ -109,21 +109,21 @@ export default function Onboarding() {
             <div key={s.id} className="flex items-center flex-1">
               <div className={clsx(
                 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                step > s.id ? 'bg-[#22c55e] text-white' :
-                step === s.id ? 'bg-[#E8192C] text-white' :
-                'bg-[#1a1a1a] text-[#444] border border-[#2a2a2a]'
+                step > s.id ? 'bg-status-success text-text-primary' :
+                step === s.id ? 'bg-accent text-text-primary' :
+                'bg-bg-elevated text-text-muted border border-border'
               )}>
                 {step > s.id ? <CheckCircle size={14} /> : s.id}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={clsx('flex-1 h-px mx-1', step > s.id ? 'bg-[#22c55e]' : 'bg-[#2a2a2a]')} />
+                <div className={clsx('flex-1 h-px mx-1', step > s.id ? 'bg-status-success' : 'bg-border')} />
               )}
             </div>
           ))}
         </div>
 
         {/* Card */}
-        <div className="bg-[#111] border border-[#2a2a2a] rounded-2xl p-7">
+        <div className="bg-bg-surface border border-border rounded-2xl p-7">
           {step === 1 && (
             <StepBalances form={form} set={set} />
           )}
@@ -172,8 +172,8 @@ export default function Onboarding() {
 function StepBalances({ form, set }) {
   return (
     <div>
-      <h2 className="font-display font-bold text-xl text-white mb-1">Opening Balances</h2>
-      <p className="text-[#555] text-sm font-body mb-6">Set your starting bank and cash amounts. The app calculates all balances forward from this date.</p>
+      <h2 className="font-display font-bold text-xl text-text-primary mb-1">Opening Balances</h2>
+      <p className="text-text-muted text-sm font-body mb-6">Set your starting bank and cash amounts. The app calculates all balances forward from this date.</p>
       <div className="space-y-4">
         <Input label="Opening Bank Balance (NPR)" type="number" prefix="NPR" value={form.openingBank} onChange={e => set('openingBank', e.target.value)} placeholder="0" />
         <Input label="Cash in Hand (NPR)" type="number" prefix="NPR" value={form.openingCash} onChange={e => set('openingCash', e.target.value)} placeholder="0" />
@@ -186,8 +186,8 @@ function StepBalances({ form, set }) {
 function StepCompany({ form, setCompany }) {
   return (
     <div>
-      <h2 className="font-display font-bold text-xl text-white mb-1">Company Details</h2>
-      <p className="text-[#555] text-sm font-body mb-6">Pre-filled with your details. Edit if needed — these appear on all invoices and payslips.</p>
+      <h2 className="font-display font-bold text-xl text-text-primary mb-1">Company Details</h2>
+      <p className="text-text-muted text-sm font-body mb-6">Pre-filled with your details. Edit if needed — these appear on all invoices and payslips.</p>
       <div className="space-y-4">
         <Input label="Company Name" value={form.company.name} onChange={e => setCompany('name', e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
@@ -204,24 +204,24 @@ function StepCompany({ form, setCompany }) {
 function StepLogo({ form, handleLogoUpload }) {
   return (
     <div>
-      <h2 className="font-display font-bold text-xl text-white mb-1">Company Logo</h2>
-      <p className="text-[#555] text-sm font-body mb-6">Upload your logo — it'll appear in the app header and on all generated PDFs.</p>
-      <label className="block w-full border-2 border-dashed border-[#2a2a2a] rounded-xl p-8 text-center cursor-pointer hover:border-[#E8192C]/50 transition-colors">
+      <h2 className="font-display font-bold text-xl text-text-primary mb-1">Company Logo</h2>
+      <p className="text-text-muted text-sm font-body mb-6">Upload your logo — it'll appear in the app header and on all generated PDFs.</p>
+      <label className="block w-full border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-accent/50 transition-colors">
         <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
         {form.logoBase64 ? (
           <div>
             <img src={form.logoBase64} alt="Logo preview" className="h-16 mx-auto object-contain mb-3" />
-            <p className="text-[#555] text-sm">Click to change</p>
+            <p className="text-text-muted text-sm">Click to change</p>
           </div>
         ) : (
           <div>
-            <Image size={32} className="mx-auto text-[#333] mb-3" />
-            <p className="text-white text-sm font-body mb-1">Click to upload logo</p>
-            <p className="text-[#444] text-xs">PNG, JPG · Transparent PNG recommended</p>
+            <Image size={32} className="mx-auto text-text-muted mb-3" />
+            <p className="text-text-primary text-sm font-body mb-1">Click to upload logo</p>
+            <p className="text-text-muted text-xs">PNG, JPG · Transparent PNG recommended</p>
           </div>
         )}
       </label>
-      <p className="text-xs text-[#333] mt-3 text-center">You can also upload this later in Settings</p>
+      <p className="text-xs text-text-muted mt-3 text-center">You can also upload this later in Settings</p>
     </div>
   )
 }
@@ -229,19 +229,19 @@ function StepLogo({ form, handleLogoUpload }) {
 function StepEmployees({ employees }) {
   return (
     <div>
-      <h2 className="font-display font-bold text-xl text-white mb-1">Team</h2>
-      <p className="text-[#555] text-sm font-body mb-5">Your team is pre-configured. You can edit individual details in Payroll → Settings after launch.</p>
+      <h2 className="font-display font-bold text-xl text-text-primary mb-1">Team</h2>
+      <p className="text-text-muted text-sm font-body mb-5">Your team is pre-configured. You can edit individual details in Payroll → Settings after launch.</p>
       <div className="space-y-2">
         {employees.map(emp => (
-          <div key={emp.id} className="flex items-center justify-between p-3 bg-[#1a1a1a] rounded-xl">
+          <div key={emp.id} className="flex items-center justify-between p-3 bg-bg-elevated rounded-xl">
             <div>
-              <div className="font-body font-medium text-white text-sm">{emp.name}</div>
-              <div className="text-[#444] text-xs capitalize">
+              <div className="font-body font-medium text-text-primary text-sm">{emp.name}</div>
+              <div className="text-text-muted text-xs capitalize">
                 {emp.type === 'fulltime' ? `Full-time · CTC NPR ${emp.ctc?.toLocaleString()}` : `${emp.type} · NPR ${emp.flatPay?.toLocaleString()}/mo`}
               </div>
             </div>
             {emp.isOwner && (
-              <span className="text-xs text-[#E8192C] font-body border border-[#E8192C]/20 px-2 py-0.5 rounded-md">CEO</span>
+              <span className="text-xs text-accent font-body border border-accent/20 px-2 py-0.5 rounded-md">CEO</span>
             )}
           </div>
         ))}
@@ -253,8 +253,8 @@ function StepEmployees({ employees }) {
 function StepCarLoan({ form, setCarLoan }) {
   return (
     <div>
-      <h2 className="font-display font-bold text-xl text-white mb-1">Car Loan</h2>
-      <p className="text-[#555] text-sm font-body mb-6">Set up your vehicle loan. The EMI is pre-filled. Skip if not applicable.</p>
+      <h2 className="font-display font-bold text-xl text-text-primary mb-1">Car Loan</h2>
+      <p className="text-text-muted text-sm font-body mb-6">Set up your vehicle loan. The EMI is pre-filled. Skip if not applicable.</p>
       <div className="space-y-4">
         <Input label="Lender / Bank Name" value={form.carLoan.lender} onChange={e => setCarLoan('lender', e.target.value)} placeholder="e.g. NMB Bank" />
         <div className="grid grid-cols-2 gap-3">
