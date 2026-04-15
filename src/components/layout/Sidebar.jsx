@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/my-expenses',   icon: User,            label: 'My Expenses'   },
   { to: '/payroll',       icon: Users,           label: 'Payroll'       },
   { to: '/invoices',      icon: FileText,        label: 'Invoices'      },
+  { to: '/clients',       icon: Building2,       label: 'Clients'       },
   { to: '/salary-ledger', icon: BookOpen,        label: "Rikesh's Ledger" },
   { to: '/inventory',     icon: Package,         label: 'Inventory'     },
   { to: '/car-loan',      icon: Car,             label: 'Car Loan'      },

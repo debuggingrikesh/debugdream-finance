@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Car, Plus, History } from 'lucide-react'
+import { Car, Plus, History, Pencil, Settings2 } from 'lucide-react'
 import { useCarLoan } from '../../hooks/useFirestore'
-import { addDocument } from '../../firebase/firestore'
+import { addDocument, updateDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { todayString, adToBS } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, EmptyState, ProgressBar } from '../../components/ui/index'
@@ -22,6 +22,16 @@ export default function CarLoan() {
   const [showPast, setShowPast]   = useState(false)
   const [pastForm, setPastForm]   = useState({ date: '', amount: '62372', notes: '' })
   const [pastSaving, setPastSaving] = useState(false)
+
+  // ── Edit EMI modal state ──────────────────────────────────────────────────
+  const [editPayment, setEditPayment]     = useState(null)
+  const [editPayForm, setEditPayForm]     = useState({ date: '', amount: '', notes: '' })
+  const [editPaySaving, setEditPaySaving] = useState(false)
+
+  // ── Edit Setup modal state ────────────────────────────────────────────────
+  const [showEditSetup, setShowEditSetup]     = useState(false)
+  const [editSetupForm, setEditSetupForm]     = useState({})
+  const [editSetupSaving, setEditSetupSaving] = useState(false)
 
   // ── Derived stats ─────────────────────────────────────────────────────────
   const emisCompleted = payments.length
@@ -75,6 +85,62 @@ export default function CarLoan() {
     }
   }
 
+  // Edit an existing payment
+  const handleEditPayment = async () => {
+    if (!editPayment || !editPayForm.amount) return
+    setEditPaySaving(true)
+    try {
+      await updateDocument('carLoanPayments', editPayment.id, {
+        date:   editPayForm.date,
+        amount: parseFloat(editPayForm.amount) || 0,
+        notes:  editPayForm.notes,
+      })
+      setEditPayment(null)
+    } finally {
+      setEditPaySaving(false)
+    }
+  }
+
+  const openEditPayment = (payment) => {
+    setEditPayment(payment)
+    setEditPayForm({
+      date:   payment.date || '',
+      amount: String(payment.amount || ''),
+      notes:  payment.notes || '',
+    })
+  }
+
+  // Edit loan setup
+  const handleEditSetup = async () => {
+    if (!setup) return
+    setEditSetupSaving(true)
+    try {
+      await updateDocument('carLoan', setup.id, {
+        lender:       editSetupForm.lender,
+        totalAmount:  parseFloat(editSetupForm.totalAmount) || 0,
+        emiAmount:    parseFloat(editSetupForm.emiAmount) || 0,
+        tenureMonths: parseInt(editSetupForm.tenureMonths) || 0,
+        interestRate: parseFloat(editSetupForm.interestRate) || 0,
+        startDate:    editSetupForm.startDate,
+      })
+      setShowEditSetup(false)
+    } finally {
+      setEditSetupSaving(false)
+    }
+  }
+
+  const openEditSetup = () => {
+    setEditSetupForm({
+      lender:       setup?.lender || '',
+      totalAmount:  String(setup?.totalAmount || ''),
+      emiAmount:    String(setup?.emiAmount || ''),
+      tenureMonths: String(setup?.tenureMonths || ''),
+      interestRate: String(setup?.interestRate || ''),
+      startDate:    setup?.startDate || '',
+    })
+    setShowEditSetup(true)
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
@@ -83,9 +149,14 @@ export default function CarLoan() {
         action={
           <div className="flex gap-2">
             {setup && (
-              <Button variant="secondary" size="sm" onClick={() => setShowPast(true)} icon={History}>
-                Log Past EMI
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" onClick={openEditSetup} icon={Settings2}>
+                  Edit Setup
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowPast(true)} icon={History}>
+                  Log Past EMI
+                </Button>
+              </>
             )}
             {!setup && (
               <Button onClick={() => setShowSetup(true)} icon={Plus}>Setup Loan</Button>
@@ -174,7 +245,16 @@ export default function CarLoan() {
                         </div>
                       </div>
                     </div>
-                    <span className="font-mono text-text-primary text-sm">{formatNPR(p.amount)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-text-primary text-sm">{formatNPR(p.amount)}</span>
+                      <button
+                        onClick={() => openEditPayment(p)}
+                        className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
+                        title="Edit payment"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -251,6 +331,77 @@ export default function CarLoan() {
             onChange={e => setPastForm(f => ({ ...f, notes: e.target.value }))}
             placeholder="e.g. Paid before app setup"
           />
+        </div>
+      </Modal>
+
+      {/* ── Edit EMI payment modal ──────────────────────────────────────────────── */}
+      <Modal
+        isOpen={!!editPayment}
+        onClose={() => setEditPayment(null)}
+        title="Edit EMI Payment"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditPayment(null)}>Cancel</Button>
+            <Button onClick={handleEditPayment} loading={editPaySaving} disabled={!editPayForm.date || !editPayForm.amount}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <p className="text-xs text-yellow-400 font-body">
+              Edit this payment's amount if your EMI changed due to floating interest rate.
+              Outstanding balance will recalculate automatically.
+            </p>
+          </div>
+          <Input
+            label="Payment Date (AD)"
+            type="date"
+            value={editPayForm.date}
+            onChange={e => setEditPayForm(f => ({ ...f, date: e.target.value }))}
+          />
+          <Input
+            label="Amount (NPR)"
+            type="number"
+            prefix="NPR"
+            value={editPayForm.amount}
+            onChange={e => setEditPayForm(f => ({ ...f, amount: e.target.value }))}
+          />
+          <Input
+            label="Notes (optional)"
+            value={editPayForm.notes}
+            onChange={e => setEditPayForm(f => ({ ...f, notes: e.target.value }))}
+            placeholder="e.g. Interest rate changed"
+          />
+        </div>
+      </Modal>
+
+      {/* ── Edit Loan Setup modal ──────────────────────────────────────────────── */}
+      <Modal
+        isOpen={showEditSetup}
+        onClose={() => setShowEditSetup(false)}
+        title="Edit Car Loan Setup"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowEditSetup(false)}>Cancel</Button>
+            <Button onClick={handleEditSetup} loading={editSetupSaving}>Save</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input label="Lender / Bank" value={editSetupForm.lender} onChange={e => setEditSetupForm(f => ({ ...f, lender: e.target.value }))} placeholder="e.g. NMB Bank" />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Total Loan (NPR)" type="number" value={editSetupForm.totalAmount} onChange={e => setEditSetupForm(f => ({ ...f, totalAmount: e.target.value }))} />
+            <Input label="EMI (NPR)" type="number" value={editSetupForm.emiAmount} onChange={e => setEditSetupForm(f => ({ ...f, emiAmount: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Start Date" type="date" value={editSetupForm.startDate} onChange={e => setEditSetupForm(f => ({ ...f, startDate: e.target.value }))} />
+            <Input label="Tenure (months)" type="number" value={editSetupForm.tenureMonths} onChange={e => setEditSetupForm(f => ({ ...f, tenureMonths: e.target.value }))} />
+          </div>
+          <Input label="Interest Rate % (optional)" type="number" value={editSetupForm.interestRate} onChange={e => setEditSetupForm(f => ({ ...f, interestRate: e.target.value }))} />
         </div>
       </Modal>
     </div>

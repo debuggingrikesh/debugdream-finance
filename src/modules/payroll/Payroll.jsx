@@ -148,27 +148,8 @@ export default function Payroll() {
         })
       }
 
-      // ── Auto-create salary ledger entry for Rikesh (ACCRUAL) ───────────────
-      const rikeshResult = results.find(r => r.isOwner || r.id === 'rikesh')
-      if (rikeshResult) {
-        const carLoanEMI = settings?.carLoanEMI || 62372
-        const employeeSSF = rikeshResult.employeeSSF || 0
-        const monthlyTDS  = rikeshResult.monthlyTDS || 0
-        
-        await addDocument('salaryLedger', {
-          monthKey,
-          monthLabel,
-          bsYear:       selectedMonth.year,
-          bsMonth:      selectedMonth.month,
-          grossAccrued: rikeshResult.grossPay || 150000,
-          employeeSSF:  employeeSSF,
-          monthlyTDS:   monthlyTDS,
-          carLoanEMI:   carLoanEMI,
-          totalPaid:    0,
-          status:       'unpaid',
-          payments:     [],
-        })
-      }
+      // ── Rikesh's salary ledger is managed manually ─────────────────────────
+      // No auto-creation — user adds entries in Rikesh's Ledger tab
 
       // ── Compliance Reminders ──────────────────────────────────────────────
       const dueD = new Date()

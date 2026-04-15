@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { useMyExpenses } from '../../hooks/useFirestore'
 import { addDocument, updateDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
-import { adToBS, BS_MONTHS, todayString, getTodayBoth } from '../../utils/dateUtils'
+import { adToBS, BS_MONTHS, todayString, getTodayBoth, formatAD } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, Select, Badge, Table, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
 
@@ -116,15 +116,30 @@ export default function MyExpenses() {
 
   const closedMonths = months.filter(m => m.status === 'closed').sort((a, b) => (b.key || '').localeCompare(a.key || ''))
 
+  const formatMonthKey = (label, key) => {
+    if (label && !label.match(/^\d{4}-\d{2}$/)) return label
+    if (!key) return label
+    const [y, m] = key.split('-')
+    const mNum = parseInt(m, 10)
+    if (!isNaN(mNum) && mNum >= 1 && mNum <= 12) return `${BS_MONTHS[mNum - 1]} ${y}`
+    return label || key
+  }
+
   const activeColumns = [
     {
       header: 'Date',
-      render: (row) => (
-        <div>
-          <div className="text-text-primary text-sm">{row.date}</div>
-          <div className="text-text-muted text-xs">{row.bsDay} — {row.bsMonth}</div>
-        </div>
-      )
+      render: (row) => {
+        const bsMonthName = row.bsMonth ? BS_MONTHS[row.bsMonth - 1] : ''
+        const adFormatted = row.date ? formatAD(row.date) : ''
+        return (
+          <div>
+            <div className="text-text-primary text-sm font-medium">
+              {row.bsDay} {bsMonthName} {row.bsYear}
+            </div>
+            <div className="text-text-muted text-xs">{adFormatted}</div>
+          </div>
+        )
+      }
     },
     { header: 'Category', render: (row) => <Badge>{row.category}</Badge> },
     { header: 'Note', render: (row) => <span className="text-text-secondary text-sm">{row.note || '—'}</span> },
@@ -158,7 +173,7 @@ export default function MyExpenses() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">
-                  {currentMonth?.monthLabel || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
+                  {formatMonthKey(currentMonth?.monthLabel, currentMonth?.key) || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
                 </div>
                 <div className="font-mono text-text-primary text-3xl font-bold">{formatNPR(activeTotal)}</div>
                 <div className="text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
@@ -211,7 +226,7 @@ export default function MyExpenses() {
                         : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
                     )}
                   >
-                    <span>{m.monthLabel}</span>
+                    <span>{formatMonthKey(m.monthLabel, m.key)}</span>
                     <span className="font-mono">{formatNPR(m.total)}</span>
                   </button>
                 ))}
@@ -225,7 +240,7 @@ export default function MyExpenses() {
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-display font-bold text-text-primary text-base">{selectedHistory.monthLabel}</h3>
+                    <h3 className="font-display font-bold text-text-primary text-base">{formatMonthKey(selectedHistory.monthLabel, selectedHistory.key)}</h3>
                     <div className="text-xs text-green-400 font-body flex items-center gap-1 mt-0.5">
                       <CheckCircle size={10} /> Reimbursed via {selectedHistory.reimbursementSource}
                     </div>

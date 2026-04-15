@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, FileText, Send, CheckCircle, Clock, AlertCircle, Download, Trash2, Pencil, Eye, X } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
-import { useInvoices } from '../../hooks/useFirestore'
+import { useInvoices, useClients } from '../../hooks/useFirestore'
 import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR, formatByCurrency, generateInvoiceNumber } from '../../utils/formatUtils'
 import { adToBS, BS_MONTHS, AD_MONTHS, todayString } from '../../utils/dateUtils'
@@ -19,10 +19,7 @@ const STATUS_CONFIG = {
   Overdue: { color: 'danger', icon: AlertCircle },
 }
 
-const DEFAULT_CLIENTS = [
-  { name: 'VXL', currency: 'NPR' },
-  { name: 'Shristi', currency: 'AUD', recurring: true, recurringAmount: 550 },
-]
+// Clients are now loaded from Firestore via useClients()
 
 // Hardcoded bank details — overridden by settings.defaultPaymentInstructions if set
 const HARDCODED_PAYMENT_INSTRUCTIONS =
@@ -51,6 +48,7 @@ function emptyInvoice(defaultNotes) {
 export default function Invoices() {
   const { settings } = useApp()
   const { data: invoices, loading, add: addInvoice, update: updateInvoice, remove: removeInvoice } = useInvoices()
+  const { data: clientsData } = useClients()
 
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -167,9 +165,9 @@ export default function Invoices() {
   )
 
   const clients = useMemo(() => {
-    const s = new Set([...DEFAULT_CLIENTS.map(c => c.name), ...invoices.map(i => i.clientName).filter(Boolean)])
+    const s = new Set([...clientsData.map(c => c.name), ...invoices.map(i => i.clientName).filter(Boolean)])
     return [...s]
-  }, [invoices])
+  }, [invoices, clientsData])
 
   const outstanding = invoices.filter(i => i.status === 'Sent' || i.status === 'Overdue')
 
@@ -305,9 +303,11 @@ export default function Invoices() {
               label="Client"
               value={form.clientName}
               onChange={e => {
-                const client = DEFAULT_CLIENTS.find(c => c.name === e.target.value)
+                const client = clientsData.find(c => c.name === e.target.value)
                 set('clientName', e.target.value)
                 if (client?.currency) set('currency', client.currency)
+                if (client?.address) set('clientAddress', client.address)
+                if (client?.contactPerson) set('clientPersonName', client.contactPerson)
               }}
             >
               <option value="">Select client...</option>

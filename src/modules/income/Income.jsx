@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Download, ArrowUpRight, Trash2, Link } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
-import { useAllIncome, useInvoices } from '../../hooks/useFirestore'
+import { useAllIncome, useInvoices, useClients } from '../../hooks/useFirestore'
 import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { adToBS, formatDualDate, BS_MONTHS, todayString } from '../../utils/dateUtils'
@@ -11,7 +11,7 @@ import {
 } from '../../components/ui/index'
 import clsx from 'clsx'
 
-const DEFAULT_CLIENTS = ['VXL', 'Shristi', 'Other']
+// Clients are now loaded from Firestore via useClients()
 
 function incomeForm() {
   return {
@@ -29,6 +29,7 @@ export default function Income() {
   const { selectedMonth } = useApp()
   const { data: allIncome, loading } = useAllIncome()
   const { data: invoices } = useInvoices()
+  const { data: clientsData } = useClients()
 
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(incomeForm())
@@ -75,9 +76,9 @@ export default function Income() {
   }, [monthIncome])
 
   const clients = useMemo(() => {
-    const set = new Set([...DEFAULT_CLIENTS, ...allIncome.map(t => t.clientName).filter(Boolean)])
+    const set = new Set([...clientsData.map(c => c.name), ...allIncome.map(t => t.clientName).filter(Boolean)])
     return [...set]
-  }, [allIncome])
+  }, [allIncome, clientsData])
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {

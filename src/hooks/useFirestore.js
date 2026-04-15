@@ -82,6 +82,10 @@ export function useInventory() {
   return useCollection('inventory')
 }
 
+export function useClients() {
+  return useCollection('clients')
+}
+
 // ── Reminders — split active vs all ──────────────────────────────────────────
 export function useReminders() {
   const { data, loading, add, update, remove } = useCollection('reminders')

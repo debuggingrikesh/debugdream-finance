@@ -12,6 +12,7 @@ import Expenses from './modules/expenses/Expenses'
 import MyExpenses from './modules/myexpenses/MyExpenses'
 import Payroll from './modules/payroll/Payroll'
 import Invoices from './modules/invoices/Invoices'
+import Clients from './modules/clients/Clients'
 import SalaryLedger from './modules/salaryledger/SalaryLedger'
 import Inventory from './modules/inventory/Inventory'
 import CarLoan from './modules/carloan/CarLoan'
@@ -61,6 +62,7 @@ function AppRoutes({ onSignOut }) {
         <Route path="my-expenses" element={<MyExpenses />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="invoices" element={<Invoices />} />
+        <Route path="clients" element={<Clients />} />
         <Route path="salary-ledger" element={<SalaryLedger />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="car-loan" element={<CarLoan />} />

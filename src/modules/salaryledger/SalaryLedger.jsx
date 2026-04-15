@@ -1,10 +1,10 @@
 // ─── Rikesh's Salary Ledger ───────────────────────────────────────────────────
 import { useState } from 'react'
-import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle } from 'lucide-react'
+import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown } from 'lucide-react'
 import { useSalaryLedger, useCarLoan } from '../../hooks/useFirestore'
 import { addDocument, updateDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
-import { todayString, adToBS } from '../../utils/dateUtils'
+import { todayString, adToBS, BS_MONTHS } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, Badge, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
 
@@ -15,11 +15,32 @@ export default function SalaryLedger() {
   const [showPayment, setShowPayment] = useState(null)
   const [payForm, setPayForm] = useState({ amount: '', date: todayString(), source: 'bank' })
   const [saving, setSaving] = useState(false)
+  const [sortOrder, setSortOrder] = useState('desc') // 'desc' = newest first, 'asc' = oldest first
 
   const AGREED_SALARY = 150000
   const currentEMI    = carLoan?.emiAmount || 0
 
-  const sorted = [...ledger].sort((a, b) => (b.monthKey || '').localeCompare(a.monthKey || ''))
+  const extractMonthKey = (label, key) => {
+    if (key && key !== '0000-00') return key
+    if (!label) return key
+    const parts = label.trim().split(' ')
+    if (parts.length >= 2) {
+      const monthName = parts[0]
+      const year = parts[1]
+      const idx = BS_MONTHS.findIndex(m => m.toLowerCase() === monthName.toLowerCase())
+      if (idx !== -1 && !isNaN(parseInt(year))) {
+        return `${year}-${String(idx + 1).padStart(2, '0')}`
+      }
+    }
+    return key
+  }
+
+  const sorted = [...ledger].sort((a, b) => {
+    const keyA = extractMonthKey(a.monthLabel, a.monthKey)
+    const keyB = extractMonthKey(b.monthLabel, b.monthKey)
+    const cmp = (keyA || '').localeCompare(keyB || '')
+    return sortOrder === 'desc' ? -cmp : cmp
+  })
 
   // Computed Values
   const totalAccrued    = ledger.reduce((s, l) => s + (l.grossAccrued || AGREED_SALARY), 0)
@@ -74,8 +95,22 @@ export default function SalaryLedger() {
   }
 
   const handleAddPrevMonth = async () => {
-    const label = prompt("Enter Month Name (e.g. 'Mangsir 2081'):")
-    if (!label) return
+    const defaultYear = new Date().getFullYear() + 57
+    const yearStr = prompt("Enter BS Year (e.g. 2081):", String(defaultYear))
+    if (!yearStr) return
+    const monthStr = prompt("Enter BS Month Number (1=Baisakh, 12=Chaitra):")
+    if (!monthStr) return
+
+    const bsYear = parseInt(yearStr)
+    const bsMonth = parseInt(monthStr)
+    if (isNaN(bsYear) || isNaN(bsMonth) || bsMonth < 1 || bsMonth > 12) {
+      alert("Invalid Year or Month")
+      return
+    }
+
+    const monthKey = `${bsYear}-${String(bsMonth).padStart(2, '0')}`
+    const label = `${BS_MONTHS[bsMonth - 1]} ${bsYear}`
+
     const gross = prompt("Enter Agreed Salary (NPR):", "150000")
     if (!gross) return
     const emi = prompt("Enter Loan/EMI for this month (NPR):", "0")
@@ -89,7 +124,7 @@ export default function SalaryLedger() {
       const t = parseFloat(taken)
       await addDocument('salaryLedger', {
         monthLabel: label,
-        monthKey: '0000-00', // Place at end/manual sort
+        monthKey: monthKey,
         grossAccrued: g,
         carLoanEMI: e,
         totalPaid: t,
@@ -116,7 +151,7 @@ export default function SalaryLedger() {
         subtitle="Tracking accruals at NPR 150,000/mo - Car EMI deductions" 
         action={
           <Button variant="secondary" size="sm" onClick={handleAddPrevMonth} icon={PlusCircle}>
-            Add Previous Month
+            Add Month Entry
           </Button>
         }
       />
@@ -157,7 +192,18 @@ export default function SalaryLedger() {
             <table className="w-full text-sm font-body">
               <thead className="bg-bg-elevated/50">
                 <tr>
-                  <th className="py-4 px-5 text-left text-xs text-text-muted uppercase tracking-wider font-bold">Month</th>
+                  <th className="py-4 px-5 text-left text-xs text-text-muted uppercase tracking-wider font-bold">
+                    <button
+                      onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
+                      className="flex items-center gap-1.5 hover:text-text-primary transition-colors group"
+                    >
+                      Month
+                      <ArrowUpDown size={12} className="opacity-50 group-hover:opacity-100" />
+                      <span className="text-[9px] font-normal normal-case text-text-muted">
+                        {sortOrder === 'desc' ? '(newest)' : '(oldest)'}
+                      </span>
+                    </button>
+                  </th>
                   <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Basis</th>
                   <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Loan/EMI</th>
                   <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Net Salary</th>
