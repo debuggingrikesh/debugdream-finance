@@ -7,31 +7,33 @@ import { Card, SectionHeader, Button, Input, Divider, Alert } from '../../compon
 import clsx from 'clsx'
 
 const HARDCODED_PAYMENT_INSTRUCTIONS =
-`Payment Instructions:
+  `Payment Instructions:
 A/C Holder Name: DEBUGDREAM PVT LTD
 Account Number: 28601040251341
 Bank Name: NEPAL INVESTMENT MEGA BANK LTD
-Bank Branch: BAGBAZAAR`
+Bank Branch: BAGBAZAAR
+SWIFT: NIBLNPKT`
 
 export default function Settings({ onSignOut }) {
   const { settings, updateSettings } = useApp()
 
   const [form, setForm] = useState({
     company: { ...(settings.company || {}) },
-    openingBank:  settings.openingBank  || '',
-    openingCash:  settings.openingCash  || '',
-    openingDate:  settings.openingDate  || '',
-    expenseCategories:   [...(settings.expenseCategories   || [])],
+    openingBank: settings.openingBank || '',
+    openingCash: settings.openingCash || '',
+    openingDate: settings.openingDate || '',
+    expenseCategories: [...(settings.expenseCategories || [])],
     myExpenseCategories: [...(settings.myExpenseCategories || [])],
     inventoryCategories: [...(settings.inventoryCategories || [])],
-    presetInvoiceItems:  [...(settings.presetInvoiceItems  || [])],
+    presetInvoiceItems: [...(settings.presetInvoiceItems || [])],
     rentReminderDay: settings.rentReminderDay || 16,
-    rentAmount:      settings.rentAmount      || 30000,
+    rentAmount: settings.rentAmount || 30000,
     defaultPaymentInstructions: settings.defaultPaymentInstructions || HARDCODED_PAYMENT_INSTRUCTIONS,
   })
 
-  const [saving,    setSaving]    = useState(false)
-  const [saved,     setSaved]     = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(null)
   const [logoBase64, setLogoBase64] = useState(settings.logoBase64 || null)
 
   const setCompany = (k, v) => setForm(f => ({ ...f, company: { ...f.company, [k]: v } }))
@@ -46,19 +48,23 @@ export default function Settings({ onSignOut }) {
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       await updateSettings({ ...form, logoBase64 })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error("Save failed", err)
+      setError(err.message || 'Error saving settings')
     } finally {
       setSaving(false)
     }
   }
 
   // ── Category helpers ──────────────────────────────────────────────────────
-  const addCat    = (field)         => setForm(f => ({ ...f, [field]: [...f[field], ''] }))
-  const removeCat = (field, i)      => setForm(f => ({ ...f, [field]: f[field].filter((_, idx) => idx !== i) }))
-  const editCat   = (field, i, val) => setForm(f => {
+  const addCat = (field) => setForm(f => ({ ...f, [field]: [...f[field], ''] }))
+  const removeCat = (field, i) => setForm(f => ({ ...f, [field]: f[field].filter((_, idx) => idx !== i) }))
+  const editCat = (field, i, val) => setForm(f => {
     const arr = [...f[field]]; arr[i] = val; return { ...f, [field]: arr }
   })
 
@@ -66,30 +72,30 @@ export default function Settings({ onSignOut }) {
   const handleExport = async () => {
     try {
       const collections = [
-        'income','expenses','myExpenses','myExpenseMonths','employees',
-        'payrollRuns','invoices','officeSetup','officeSetupTransactions',
-        'salaryLedger','inventory','carLoan','carLoanPayments','reminders',
+        'income', 'expenses', 'myExpenses', 'myExpenseMonths', 'employees',
+        'payrollRuns', 'invoices', 'officeSetup', 'officeSetupTransactions',
+        'salaryLedger', 'inventory', 'carLoan', 'carLoanPayments', 'reminders',
       ]
       const backup = {}
       for (const col of collections) backup[col] = await getDocuments(col)
-      backup.settings   = settings
+      backup.settings = settings
       backup.exportedAt = new Date().toISOString()
 
-      const { bs }  = getTodayBoth()
+      const { bs } = getTodayBoth()
       const fileName = `debugdream-backup-${bs.year}-${BS_MONTHS[bs.month - 1]}.json`
-      const blob     = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
-      const a        = document.createElement('a')
-      a.href         = URL.createObjectURL(blob)
-      a.download     = fileName
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = fileName
       a.click()
     } catch (err) {
       console.error('Backup failed:', err)
     }
   }
 
-  // ── Category editor sub-component ─────────────────────────────────────────
-  const CategoryEditor = ({ label, field }) => (
-    <div>
+  // ── Category editor render helper ─────────────────────────────────────────
+  const renderCategoryEditor = (label, field) => (
+    <div key={field}>
       <div className="flex items-center justify-between mb-2">
         <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider">{label}</label>
         <button onClick={() => addCat(field)} className="text-xs text-accent hover:underline font-body flex items-center gap-1">
@@ -98,11 +104,12 @@ export default function Settings({ onSignOut }) {
       </div>
       <div className="space-y-1.5">
         {form[field].map((cat, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={`${field}-${i}`} className="flex items-center gap-2">
             <input
               value={cat}
               onChange={e => editCat(field, i, e.target.value)}
               className="flex-1 bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary font-body outline-none focus:border-accent"
+              placeholder={`${label} name...`}
             />
             <button onClick={() => removeCat(field, i)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
               <X size={12} />
@@ -121,11 +128,12 @@ export default function Settings({ onSignOut }) {
         action={
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={handleExport} icon={Download}>Backup</Button>
-            <Button size="sm" onClick={handleSave} loading={saving} icon={Save}>Save</Button>
+            <Button size="sm" onClick={handleSave} loading={saving} icon={Save}>Save Settings</Button>
           </div>
         }
       />
 
+      {error && <Alert type="error" message={error} />}
       {saved && <Alert type="success" message="Settings saved successfully." />}
 
       {/* ── Company profile ─────────────────────────────────────────────────── */}
@@ -158,7 +166,7 @@ export default function Settings({ onSignOut }) {
             <Input label="Registration No." value={form.company.registration || ''} onChange={e => setCompany('registration', e.target.value)} />
           </div>
           <Input label="Address" value={form.company.address || ''} onChange={e => setCompany('address', e.target.value)} />
-          <Input label="Website"  value={form.company.website || ''} onChange={e => setCompany('website', e.target.value)} />
+          <Input label="Website" value={form.company.website || ''} onChange={e => setCompany('website', e.target.value)} />
         </div>
       </Card>
 
@@ -201,13 +209,13 @@ export default function Settings({ onSignOut }) {
       <Card className="p-4 md:p-5">
         <h3 className="font-display font-bold text-text-primary text-base mb-5">Categories</h3>
         <div className="space-y-6">
-          <CategoryEditor label="Expense Categories"    field="expenseCategories"   />
+          {renderCategoryEditor("Expense Categories", "expenseCategories")}
           <Divider />
-          <CategoryEditor label="My Expense Categories" field="myExpenseCategories" />
+          {renderCategoryEditor("My Expense Categories", "myExpenseCategories")}
           <Divider />
-          <CategoryEditor label="Inventory Categories"  field="inventoryCategories" />
+          {renderCategoryEditor("Inventory Categories", "inventoryCategories")}
           <Divider />
-          <CategoryEditor label="Preset Invoice Items"  field="presetInvoiceItems" />
+          {renderCategoryEditor("Preset Invoice Items", "presetInvoiceItems")}
         </div>
       </Card>
 

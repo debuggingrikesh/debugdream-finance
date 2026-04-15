@@ -28,6 +28,7 @@ const initialState = {
     ],
     myExpenseCategories: ['Food', 'Misc', 'Transport', 'Other'],
     inventoryCategories: ['Electronics', 'Furniture', 'Software', 'Stationery', 'Other'],
+    presetInvoiceItems: [],
     rentReminderDay: 16,
     rentAmount: 30000,
     onboardingComplete: false,

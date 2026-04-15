@@ -375,13 +375,35 @@ export default function Invoices() {
           </div>
 
           {/* Line items */}
-          <datalist id="preset-items">
-            {(settings?.presetInvoiceItems || []).map(item => (
-              <option key={item} value={item} />
-            ))}
-          </datalist>
+          <div className="flex items-end justify-between mb-2">
+            <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block">Line Items</label>
+            {settings?.presetInvoiceItems?.length > 0 && (
+              <div className="w-48">
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (!val) return
+                    const items = [...form.lineItems]
+                    const last = items[items.length - 1]
+                    // If the last item is completely empty, overwrite it. Else, append a new row.
+                    if (last && !last.description && !last.rate) {
+                      items[items.length - 1] = { ...last, description: val }
+                    } else {
+                      items.push({ description: val, qty: 1, rate: '' })
+                    }
+                    set('lineItems', items)
+                  }}
+                >
+                  <option value="">+ Add from presets...</option>
+                  {settings.presetInvoiceItems.map(item => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </div>
           <div>
-            <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block mb-2">Line Items</label>
             <div className="space-y-2">
               {form.lineItems.map((item, i) => (
                 <div key={i} className="flex gap-2 items-center">
@@ -389,7 +411,6 @@ export default function Invoices() {
                     value={item.description}
                     onChange={e => setLineItem(i, 'description', e.target.value)}
                     placeholder="Description"
-                    list="preset-items"
                     className="flex-1 bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent min-w-0"
                   />
                   <input
