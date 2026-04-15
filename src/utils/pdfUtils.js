@@ -201,60 +201,66 @@ export function generateInvoicePDF(invoice, company, logoBase64, mode = 'downloa
     margin: { left: 14, right: 14 },
   })
 
-  // ── Total block ───────────────────────────────────────────────────────────
-  let finalY = doc.lastAutoTable.finalY + 10
+  // ── Total block & Notes (Side by Side) ───────────────────────────────────
+  let summaryY = doc.lastAutoTable.finalY + 12
+  const computedSubtotal = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.rate || 0)), 0)
+  const computedTotal = invoice.total || computedSubtotal
 
-  // Summary logic
+  // -- Notes / Payment Info (Left Side) --
+  if (invoice.notes) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...BRAND.gray)
+    doc.text('PAYMENT INSTRUCTIONS', 14, summaryY)
+    
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...BRAND.darkGray)
+    const lines = doc.splitTextToSize(invoice.notes, W - 95)
+    
+    doc.setFillColor(...BRAND.offWhite)
+    doc.setDrawColor(...BRAND.lightGray)
+    doc.setLineWidth(0.2)
+    doc.roundedRect(14, summaryY + 3, W - 100, (lines.length * 4.5) + 6, 2, 2, 'FD')
+    
+    doc.text(lines, 18, summaryY + 9)
+  }
+
+  // -- Totals (Right Side) --
   const summaryX = W - 75
-  const rowH = 7
+  const rowH = 6.5
   
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...BRAND.darkGray)
-  doc.text('Subtotal:', summaryX, finalY)
-  doc.text(formatByCurrency(invoice.subtotal, invoice.currency), W - 14, finalY, { align: 'right' })
+  doc.text('Subtotal:', summaryX, summaryY)
+  doc.text(formatByCurrency(computedSubtotal, invoice.currency), W - 14, summaryY, { align: 'right' })
   
   if (invoice.discount > 0) {
-    finalY += rowH
-    doc.text('Discount:', summaryX, finalY)
-    doc.text(`- ${formatByCurrency(invoice.discount, invoice.currency)}`, W - 14, finalY, { align: 'right' })
+    summaryY += rowH
+    doc.text('Discount:', summaryX, summaryY)
+    doc.text(`- ${formatByCurrency(invoice.discount, invoice.currency)}`, W - 14, summaryY, { align: 'right' })
   }
   
   if (invoice.tax > 0) {
-    finalY += rowH
-    doc.text(`Tax (${invoice.taxRate}%):`, summaryX, finalY)
-    doc.text(formatByCurrency(invoice.tax, invoice.currency), W - 14, finalY, { align: 'right' })
+    summaryY += rowH
+    doc.text(`Tax (${invoice.taxRate}%):`, summaryX, summaryY)
+    doc.text(formatByCurrency(invoice.tax, invoice.currency), W - 14, summaryY, { align: 'right' })
   }
 
-  // Final Total Block
-  finalY += rowH + 2
+  summaryY += rowH + 2
+  
+  // Outstanding beautiful final total box
   doc.setFillColor(...BRAND.black)
-  doc.rect(summaryX - 5, finalY - 5, 75 + 5, 14, 'F')
+  doc.roundedRect(summaryX - 5, summaryY - 5, 80, 15, 2, 2, 'F')
   
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
+  doc.setFontSize(10)
   doc.setTextColor(...BRAND.white)
-  doc.text('TOTAL DUE', summaryX, finalY + 4)
+  doc.text('TOTAL DUE', summaryX, summaryY + 4)
   
   doc.setFontSize(12)
-  doc.text(formatByCurrency(invoice.total, invoice.currency), W - 14, finalY + 4, { align: 'right' })
-  
-  finalY += 20 // Space after totals
-
-  // Notes area
-  if (invoice.notes) {
-    const notesY = finalY
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.setTextColor(...BRAND.gray)
-    doc.text('NOTES / PAYMENT INSTRUCTIONS', 14, notesY)
-    
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(...BRAND.darkGray)
-    const lines = doc.splitTextToSize(invoice.notes, W - 90) // Wrap notes to avoid overlapping signature
-    doc.text(lines, 14, notesY + 6)
-  }
+  doc.text(formatByCurrency(computedTotal, invoice.currency), W - 9, summaryY + 4.5, { align: 'right' })
 
   // ── Signature (Bottom Right) ─────────────────────────────────────────────
   const sigBlockY = H - 55

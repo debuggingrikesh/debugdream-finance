@@ -24,6 +24,7 @@ export default function Settings({ onSignOut }) {
     expenseCategories:   [...(settings.expenseCategories   || [])],
     myExpenseCategories: [...(settings.myExpenseCategories || [])],
     inventoryCategories: [...(settings.inventoryCategories || [])],
+    presetInvoiceItems:  [...(settings.presetInvoiceItems  || [])],
     rentReminderDay: settings.rentReminderDay || 16,
     rentAmount:      settings.rentAmount      || 30000,
     defaultPaymentInstructions: settings.defaultPaymentInstructions || HARDCODED_PAYMENT_INSTRUCTIONS,
@@ -205,6 +206,8 @@ export default function Settings({ onSignOut }) {
           <CategoryEditor label="My Expense Categories" field="myExpenseCategories" />
           <Divider />
           <CategoryEditor label="Inventory Categories"  field="inventoryCategories" />
+          <Divider />
+          <CategoryEditor label="Preset Invoice Items"  field="presetInvoiceItems" />
         </div>
       </Card>
 

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Play, FileText, Download, CheckCircle, Plus, Pencil } from 'lucide-react'
+import { Play, FileText, Download, CheckCircle, Plus, Pencil, Trash2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
-import { useEmployees, usePayrollRuns } from '../../hooks/useFirestore'
+import { useEmployees, usePayrollRuns, useTDS } from '../../hooks/useFirestore'
 import { addDocument, updateDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { BS_MONTHS, adToBS, todayString } from '../../utils/dateUtils'
@@ -158,6 +158,19 @@ export default function Payroll() {
 
       if (depositTotals.totalTDS > 0) {
         await addDocument('reminders', { title: `TDS: ${monthLabel}`, amount: depositTotals.totalTDS, dueDate, status: 'active', type: 'tds' })
+        
+        // Auto-add TDS Liabilities per employee
+        for (const empRes of results) {
+          if ((empRes.monthlyTDS || 0) > 0) {
+            await addDocument('tdsLedger', {
+              employeeName: empRes.name,
+              monthLabel: monthLabel,
+              amount: empRes.monthlyTDS,
+              status: 'unpaid',
+              addedAt: new Date().toISOString()
+            })
+          }
+        }
       }
       if (depositTotals.totalSSF > 0) {
         await addDocument('reminders', { title: `SSF: ${monthLabel}`, amount: depositTotals.totalSSF, dueDate, status: 'active', type: 'ssf' })
@@ -443,6 +456,9 @@ export default function Payroll() {
           </div>
         </div>
       </Modal>
+
+      {/* ── TDS Liability Ledger ──────────────────────────────────────────────── */}
+      <TDSLedger />
 
       {/* ── Employee add/edit modal ───────────────────────────────────────────── */}
       <EmployeeModal
@@ -826,5 +842,184 @@ function EmployeeModal({ isOpen, onClose, employee, onSave }) {
         )}
       </div>
     </Modal>
+  )
+}
+
+// ─── TDS Liability Ledger Component ───────────────────────────────────────────
+function TDSLedger() {
+  const { data: tdsEntries, loading, add: addTds, update: updateTds, remove: removeTds } = useTDS()
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [loadingAdd, setLoadingAdd] = useState(false)
+  const [form, setForm] = useState({ employeeName: '', monthLabel: '', amount: '' })
+
+  // One-time Initial Seeding
+  useEffect(() => {
+    if (!loading && tdsEntries.length === 0 && !localStorage.getItem('tds_seeded_v3')) {
+      localStorage.setItem('tds_seeded_v3', '1')
+      const initialData = [
+        { employeeName: 'Rikesh', monthLabel: 'Magh', amount: 410, status: 'unpaid' },
+        { employeeName: 'Rikesh', monthLabel: 'Falgun', amount: 410, status: 'unpaid' },
+        { employeeName: 'Pranesh', monthLabel: 'Falgun', amount: 700, status: 'unpaid' },
+        { employeeName: 'Samana', monthLabel: 'Magh', amount: 300, status: 'unpaid' },
+        { employeeName: 'Samana', monthLabel: 'Falgun', amount: 220, status: 'unpaid' },
+        { employeeName: 'Sapana', monthLabel: 'Falgun', amount: 50, status: 'unpaid' },
+      ]
+      initialData.forEach(d => addTds({ ...d, addedAt: new Date().toISOString() }))
+    }
+  }, [loading, tdsEntries.length, addTds])
+
+  const unpaidTotal = tdsEntries.filter(t => t.status === 'unpaid').reduce((s, t) => s + (t.amount || 0), 0)
+
+  // Group by Employee -> { unpaid: [], paid: [] }
+  const groupedEntries = useMemo(() => {
+    const map = {}
+    tdsEntries.forEach(e => {
+      if (!map[e.employeeName]) map[e.employeeName] = { unpaid: [], paid: [] }
+      if (e.status === 'unpaid') map[e.employeeName].unpaid.push(e)
+      else map[e.employeeName].paid.push(e)
+    })
+    return Object.fromEntries(Object.entries(map).sort(([a], [b]) => a.localeCompare(b)))
+  }, [tdsEntries])
+
+  const handleMarkPaid = async (id) => {
+    if (window.confirm('Mark this TDS amount as paid/deposited?')) {
+      await updateTds(id, { status: 'paid', paidAt: new Date().toISOString() })
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this TDS record?')) {
+      await removeTds(id)
+    }
+  }
+
+  const handleMarkAllPaid = async (empName) => {
+    if (window.confirm(`Mark all unpaid TDS for ${empName} as paid?`)) {
+      setLoadingAdd(true)
+      try {
+        const toPay = groupedEntries[empName].unpaid
+        await Promise.all(toPay.map(entry => updateTds(entry.id, { status: 'paid', paidAt: new Date().toISOString() })))
+      } finally {
+        setLoadingAdd(false)
+      }
+    }
+  }
+
+  const handleManualAdd = async () => {
+    if (!form.employeeName || !form.monthLabel || !form.amount) return
+    setLoadingAdd(true)
+    try {
+      await addTds({
+        employeeName: form.employeeName,
+        monthLabel: form.monthLabel,
+        amount: parseFloat(form.amount) || 0,
+        status: 'unpaid',
+        addedAt: new Date().toISOString()
+      })
+      setShowAddForm(false)
+      setForm({ employeeName: '', monthLabel: '', amount: '' })
+    } finally {
+      setLoadingAdd(false)
+    }
+  }
+
+  if (loading) return null
+
+  return (
+    <Card className="p-4 md:p-5 mt-6 border-l-4 border-l-orange-500">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="font-display font-bold text-text-primary text-base">TDS Liability Ledger</h2>
+          <p className="text-xs text-text-muted mt-0.5">Track unpaid Tax Deducted at Source across all months</p>
+        </div>
+        <div className="flex gap-4 items-center">
+          <div className="text-right">
+            <div className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Total Due</div>
+            <div className="font-mono text-orange-400 font-bold text-lg">{formatNPR(unpaidTotal)}</div>
+          </div>
+          <Button variant="secondary" size="xs" icon={Plus} onClick={() => setShowAddForm(true)}>Add TDS</Button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5">
+        <table className="w-full text-sm font-body" style={{ minWidth: 700 }}>
+          <thead>
+            <tr className="border-b border-border">
+              <th className="pb-3 text-xs text-text-muted uppercase tracking-wider font-medium text-left">Employee</th>
+              <th className="pb-3 text-xs text-text-muted uppercase tracking-wider font-medium text-left">Pending Months Breakdown</th>
+              <th className="pb-3 text-xs text-text-muted uppercase tracking-wider font-medium text-right">Total Unpaid</th>
+              <th className="pb-3 text-xs text-text-muted uppercase tracking-wider font-medium text-right"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-bg-elevated">
+            {Object.entries(groupedEntries).map(([empName, data]) => {
+              const empUnpaidTotal = data.unpaid.reduce((s, t) => s + (t.amount || 0), 0)
+              
+              return (
+                <tr key={empName} className="hover:bg-bg-surface transition-colors">
+                  <td className="py-4 align-top">
+                    <div className="font-bold text-text-primary text-base">{empName}</div>
+                    {data.paid.length > 0 && (
+                      <div className="text-[10px] text-text-muted mt-1">{data.paid.length} historic paid entries</div>
+                    )}
+                  </td>
+                  <td className="py-4 align-top max-w-lg">
+                    {data.unpaid.length === 0 ? (
+                      <span className="text-xs text-text-muted italic flex items-center gap-1">
+                        <CheckCircle size={12} className="text-green-500" /> Fully cleared
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {data.unpaid.sort((a,b) => a.addedAt?.localeCompare(b.addedAt) || 0).map(entry => (
+                          <div key={entry.id} className="flex items-stretch bg-orange-500/10 border border-orange-500/20 rounded-md overflow-hidden group">
+                            <div className="px-2 py-1 text-xs text-orange-400 font-medium border-r border-orange-500/20 flex flex-col justify-center">
+                              <span className="font-bold">{entry.monthLabel}</span>
+                              <span className="font-mono text-[10px]">{formatNPR(entry.amount)}</span>
+                            </div>
+                            <div className="flex flex-col bg-bg-elevated/50 opacity-0 group-hover:opacity-100 transition-opacity w-0 group-hover:w-6">
+                              <button onClick={() => handleMarkPaid(entry.id)} title="Mark Paid" className="flex-1 flex items-center justify-center text-green-400 hover:bg-green-500 hover:text-white transition-colors">
+                                <CheckCircle size={10} />
+                              </button>
+                              <button onClick={() => handleDelete(entry.id)} title="Delete Entry" className="flex-1 flex items-center justify-center text-text-muted hover:bg-red-500 hover:text-white transition-colors border-t border-border">
+                                <Trash2 size={10} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-4 align-top text-right">
+                    <div className={clsx("font-mono font-bold text-lg", empUnpaidTotal > 0 ? "text-orange-400" : "text-text-muted")}>
+                      {formatNPR(empUnpaidTotal)}
+                    </div>
+                  </td>
+                  <td className="py-4 align-top text-right">
+                    {data.unpaid.length > 0 && (
+                      <button onClick={() => handleMarkAllPaid(empName)} className="text-[10px] bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-white px-3 py-1.5 rounded-lg font-bold transition-colors uppercase tracking-wider">
+                        Clear All
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        {Object.keys(groupedEntries).length === 0 && (
+          <div className="text-center p-6 text-xs text-text-muted italic">No TDS liabilities tracked yet.</div>
+        )}
+      </div>
+
+      {showAddForm && (
+        <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title="Add Manual TDS Entry" size="sm" footer={<><Button variant="ghost" onClick={() => setShowAddForm(false)}>Cancel</Button><Button onClick={handleManualAdd} loading={loadingAdd}>Save</Button></>}>
+          <div className="space-y-3">
+            <Input label="Employee Name" placeholder="e.g. Rikesh" value={form.employeeName} onChange={e => setForm(f => ({...f, employeeName: e.target.value}))} />
+            <Input label="Month Label" placeholder="e.g. Magh" value={form.monthLabel} onChange={e => setForm(f => ({...f, monthLabel: e.target.value}))} />
+            <Input label="TDS Amount" type="number" prefix="NPR" value={form.amount} onChange={e => setForm(f => ({...f, amount: e.target.value}))} />
+          </div>
+        </Modal>
+      )}
+    </Card>
   )
 }

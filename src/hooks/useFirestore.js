@@ -86,6 +86,10 @@ export function useClients() {
   return useCollection('clients')
 }
 
+export function useTDS() {
+  return useCollection('tdsLedger')
+}
+
 // ── Reminders — split active vs all ──────────────────────────────────────────
 export function useReminders() {
   const { data, loading, add, update, remove } = useCollection('reminders')

@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { useInvoices, useClients } from '../../hooks/useFirestore'
 import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR, formatByCurrency, generateInvoiceNumber } from '../../utils/formatUtils'
-import { adToBS, BS_MONTHS, AD_MONTHS, todayString } from '../../utils/dateUtils'
+import { adToBS, BS_MONTHS, AD_MONTHS, todayString, getTodayBoth } from '../../utils/dateUtils'
 import { generateInvoicePDF } from '../../utils/pdfUtils'
 import {
   Card, SectionHeader, Button, Modal, Input, Select, Badge,
@@ -30,6 +30,7 @@ Bank Branch: BAGBAZAAR
 SWIFT: NIBLNPKT`
 
 function emptyInvoice(defaultNotes) {
+  const { bs } = getTodayBoth()
   return {
     clientName: '',
     clientAddress: '',
@@ -40,7 +41,7 @@ function emptyInvoice(defaultNotes) {
     notes: defaultNotes || HARDCODED_PAYMENT_INSTRUCTIONS,
     status: 'Draft',
     clientPersonName: '',
-    servicePeriodStart: { month: new Date().getMonth() + 1, year: new Date().getFullYear() },
+    servicePeriodStart: { month: bs.month, year: bs.year },
     servicePeriodEnd: null,
   }
 }
@@ -305,15 +306,36 @@ export default function Invoices() {
               onChange={e => {
                 const client = clientsData.find(c => c.name === e.target.value)
                 set('clientName', e.target.value)
-                if (client?.currency) set('currency', client.currency)
+                const newCurrency = client?.currency || 'NPR'
+                set('currency', newCurrency)
                 if (client?.address) set('clientAddress', client.address)
                 if (client?.contactPerson) set('clientPersonName', client.contactPerson)
+                
+                // Smart default for service period
+                if (newCurrency === 'NPR') {
+                  const { bs } = getTodayBoth()
+                  set('servicePeriodStart', { month: bs.month, year: bs.year })
+                } else {
+                  const d = new Date()
+                  set('servicePeriodStart', { month: d.getMonth() + 1, year: d.getFullYear() })
+                }
               }}
             >
               <option value="">Select client...</option>
               {clients.map(c => <option key={c} value={c}>{c}</option>)}
             </Select>
-            <Select label="Currency" value={form.currency} onChange={e => set('currency', e.target.value)}>
+            <Select label="Currency" value={form.currency} onChange={e => {
+              const newCurrency = e.target.value
+              set('currency', newCurrency)
+              // Smart default for service period
+              if (newCurrency === 'NPR') {
+                const { bs } = getTodayBoth()
+                set('servicePeriodStart', { month: bs.month, year: bs.year })
+              } else {
+                const d = new Date()
+                set('servicePeriodStart', { month: d.getMonth() + 1, year: d.getFullYear() })
+              }
+            }}>
               <option value="NPR">NPR — Nepali Rupee</option>
               <option value="AUD">AUD — Australian Dollar</option>
               <option value="USD">USD — US Dollar</option>
@@ -353,6 +375,11 @@ export default function Invoices() {
           </div>
 
           {/* Line items */}
+          <datalist id="preset-items">
+            {(settings?.presetInvoiceItems || []).map(item => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
           <div>
             <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider block mb-2">Line Items</label>
             <div className="space-y-2">
@@ -362,6 +389,7 @@ export default function Invoices() {
                     value={item.description}
                     onChange={e => setLineItem(i, 'description', e.target.value)}
                     placeholder="Description"
+                    list="preset-items"
                     className="flex-1 bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent min-w-0"
                   />
                   <input
