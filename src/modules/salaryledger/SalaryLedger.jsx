@@ -1,8 +1,8 @@
 // ─── Rikesh's Salary Ledger ───────────────────────────────────────────────────
 import { useState } from 'react'
-import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown } from 'lucide-react'
+import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown, RefreshCcw } from 'lucide-react'
 import { useSalaryLedger, useCarLoan } from '../../hooks/useFirestore'
-import { addDocument, updateDocument } from '../../firebase/firestore'
+import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { todayString, adToBS, BS_MONTHS } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, Badge, EmptyState } from '../../components/ui/index'
@@ -10,12 +10,13 @@ import clsx from 'clsx'
 
 export default function SalaryLedger() {
   const { data: ledger, loading: ledgerLoading } = useSalaryLedger()
-  const { setup: carLoan, loading: loanLoading } = useCarLoan()
+  const { setup: carLoan, payments: carPayments, loading: loanLoading } = useCarLoan()
 
   const [showPayment, setShowPayment] = useState(null)
   const [payForm, setPayForm] = useState({ amount: '', date: todayString(), source: 'bank' })
   const [saving, setSaving] = useState(false)
   const [sortOrder, setSortOrder] = useState('desc') // 'desc' = newest first, 'asc' = oldest first
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const AGREED_SALARY = 150000
   const currentEMI    = carLoan?.emiAmount || 0
@@ -90,8 +91,81 @@ export default function SalaryLedger() {
     const newVal = prompt(`Enter new value for ${field}:`, currentVal)
     if (newVal === null || newVal === '') return
     try {
-      await updateDocument('salaryLedger', id, { [field]: parseFloat(newVal) })
+      const val = parseFloat(newVal)
+      await updateDocument('salaryLedger', id, { [field]: val })
+      
+      // If editing EMI, sync to car loan
+      if (field === 'carLoanEMI') {
+        const entry = ledger.find(l => l.id === id)
+        if (entry) {
+          await syncEMIToCarLoan({ ...entry, [field]: val })
+        }
+      }
     } catch (e) { console.error(e) }
+  }
+
+  // ── EMI Sync Logic ────────────────────────────────────────────────────────
+  const syncEMIToCarLoan = async (entry) => {
+    const emi = entry.carLoanEMI || 0
+    const existing = carPayments.find(p => p.linkedLedgerId === entry.id)
+
+    if (emi > 0) {
+      // Approximate AD date from BS monthKey (BS Year - 57)
+      // Standardizes to 1st of the month
+      let dateStr = ''
+      let bsYear = 0
+      let bsMonth = 0
+
+      if (entry.monthKey) {
+          const parts = entry.monthKey.split('-')
+          bsYear = parseInt(parts[0])
+          bsMonth = parseInt(parts[1])
+          
+          // Logic: Baisakh (1) -> May (5), Chaitra (12) -> April (4) next year
+          let adYear = bsYear - 57
+          let adMonth = bsMonth + 4
+          if (adMonth > 12) {
+            adMonth -= 12
+            adYear += 1
+          }
+          dateStr = `${adYear}-${String(adMonth).padStart(2, '0')}-01`
+      }
+
+      const paymentData = {
+        amount: emi,
+        date: dateStr || todayString(),
+        notes: `EMI from Salary Ledger - ${entry.monthLabel}`,
+        bsYear,
+        bsMonth,
+        linkedLedgerId: entry.id,
+        isLedgerSync: true
+      }
+
+      if (existing) {
+        await updateDocument('carLoanPayments', existing.id, paymentData)
+      } else {
+        await addDocument('carLoanPayments', paymentData)
+      }
+    } else if (existing) {
+      // If EMI is removed/zeroed in ledger, delete the car payment
+      await deleteDocument('carLoanPayments', existing.id)
+    }
+  }
+
+  const handleSyncAll = async () => {
+    if (!confirm("This will scan all ledger entries and reconcile them with the Car Loan payment history. Continue?")) return
+    setIsSyncing(true)
+    try {
+      for (const entry of ledger) {
+        await syncEMIToCarLoan(entry)
+      }
+      alert("Synchronization complete!")
+    } catch (err) {
+      console.error(err)
+      alert("Sync failed: " + err.message)
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   const handleAddPrevMonth = async () => {
@@ -122,7 +196,7 @@ export default function SalaryLedger() {
       const g = parseFloat(gross)
       const e = parseFloat(emi)
       const t = parseFloat(taken)
-      await addDocument('salaryLedger', {
+      const newId = await addDocument('salaryLedger', {
         monthLabel: label,
         monthKey: monthKey,
         grossAccrued: g,
@@ -131,6 +205,11 @@ export default function SalaryLedger() {
         status: t >= (g - e) ? 'cleared' : (t > 0 ? 'partial' : 'unpaid'),
         isAdjustment: true,
       })
+
+      // Sync to car loan
+      if (e > 0) {
+        await syncEMIToCarLoan({ id: newId, monthLabel: label, monthKey: monthKey, carLoanEMI: e })
+      }
     } catch (err) { console.error(err) }
   }
 
@@ -150,9 +229,20 @@ export default function SalaryLedger() {
         title="Rikesh's Salary Ledger" 
         subtitle="Tracking accruals at NPR 150,000/mo - Car EMI deductions" 
         action={
-          <Button variant="secondary" size="sm" onClick={handleAddPrevMonth} icon={PlusCircle}>
-            Add Month Entry
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSyncAll} 
+                icon={RefreshCcw} 
+                loading={isSyncing}
+            >
+              Sync with Car Loan
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleAddPrevMonth} icon={PlusCircle}>
+              Add Month Entry
+            </Button>
+          </div>
         }
       />
 

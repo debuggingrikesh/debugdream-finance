@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Car, Plus, History, Pencil, Settings2 } from 'lucide-react'
+import { Car, Plus, History, Pencil, Settings2, Trash2 } from 'lucide-react'
 import { useCarLoan } from '../../hooks/useFirestore'
-import { addDocument, updateDocument } from '../../firebase/firestore'
+import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { todayString, adToBS } from '../../utils/dateUtils'
-import { Card, SectionHeader, Button, Modal, Input, EmptyState, ProgressBar } from '../../components/ui/index'
+import { Card, SectionHeader, Button, Modal, Input, EmptyState, ProgressBar, ConfirmDialog } from '../../components/ui/index'
 import clsx from 'clsx'
 
 export default function CarLoan() {
@@ -27,6 +27,10 @@ export default function CarLoan() {
   const [editPayment, setEditPayment]     = useState(null)
   const [editPayForm, setEditPayForm]     = useState({ date: '', amount: '', notes: '' })
   const [editPaySaving, setEditPaySaving] = useState(false)
+
+  // ── Delete state ──────────────────────────────────────────────────────────
+  const [deleteId, setDeleteId] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   // ── Edit Setup modal state ────────────────────────────────────────────────
   const [showEditSetup, setShowEditSetup]     = useState(false)
@@ -98,6 +102,18 @@ export default function CarLoan() {
       setEditPayment(null)
     } finally {
       setEditPaySaving(false)
+    }
+  }
+
+  // Delete an existing payment
+  const handleDeletePayment = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    try {
+      await deleteDocument('carLoanPayments', deleteId)
+      setDeleteId(null)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -254,6 +270,13 @@ export default function CarLoan() {
                       >
                         <Pencil size={12} />
                       </button>
+                      <button
+                        onClick={() => setDeleteId(p.id)}
+                        className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"
+                        title="Delete payment"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -404,6 +427,16 @@ export default function CarLoan() {
           <Input label="Interest Rate % (optional)" type="number" value={editSetupForm.interestRate} onChange={e => setEditSetupForm(f => ({ ...f, interestRate: e.target.value }))} />
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeletePayment}
+        title="Delete Payment"
+        message="Are you sure you want to delete this payment record? This will permanently remove the entry."
+        confirmLabel="Delete"
+        loading={deleting}
+      />
     </div>
   )
 }
