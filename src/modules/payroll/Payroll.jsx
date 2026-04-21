@@ -25,7 +25,7 @@ const calcEmployee = (emp, carLoanEMI, ytd = {}) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Payroll() {
-  const { selectedMonth, settings } = useApp()
+  const { selectedMonth, settings, setSelectedMonth } = useApp()
   const { data: employees, add: addEmployee, update: updateEmployee } = useEmployees()
   const { data: payrollRuns, add: addRun } = usePayrollRuns()
 
@@ -49,6 +49,32 @@ export default function Payroll() {
     () => payrollRuns.find(r => r.monthKey === monthKey),
     [payrollRuns, monthKey]
   )
+
+  // ── Smart month detection: show earliest unrun month ─────────────────────
+  // Starts from Chaitra 2082 (month 12, year 2082) and advances after each run
+  useEffect(() => {
+    if (!payrollRuns || payrollRuns.length === undefined) return
+    const PAYROLL_START = { year: 2082, month: 12 } // Chaitra 2082
+
+    let checkYear = PAYROLL_START.year
+    let checkMonth = PAYROLL_START.month
+
+    // Walk forward from Chaitra 2082 until we find a month that hasn't been run
+    for (let i = 0; i < 24; i++) { // max 24 months lookahead
+      const key = `${checkYear}-${String(checkMonth).padStart(2, '0')}`
+      const hasRun = payrollRuns.some(r => r.monthKey === key)
+      if (!hasRun) {
+        // Only auto-set if we're not already viewing this month
+        if (selectedMonth?.year !== checkYear || selectedMonth?.month !== checkMonth) {
+          setSelectedMonth(checkYear, checkMonth)
+        }
+        break
+      }
+      checkMonth++
+      if (checkMonth > 12) { checkMonth = 1; checkYear++ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payrollRuns.length])
 
   // ── YTD Data Aggregation ────────────────────────────────────────────────────
   const ytdMap = useMemo(() => {
@@ -195,8 +221,18 @@ export default function Payroll() {
 
   // ── Payslip generation ──────────────────────────────────────────────────────
   const handleGeneratePayslip = (emp) => {
-    const company = settings?.company || {}
-    generatePayslipPDF(emp, emp, monthLabel, company, settings?.logoBase64)
+    try {
+      const company = settings?.company || {}
+      const payrollData = {
+        ...emp,
+        allowances: emp.allowances || [],
+        basic: emp.basic || emp.grossPay || 0,
+      }
+      generatePayslipPDF(payrollData, payrollData, monthLabel, company, settings?.logoBase64)
+    } catch (err) {
+      console.error('Payslip generation failed:', err)
+      alert(`Failed to generate payslip for ${emp.name}: ${err.message}`)
+    }
   }
 
   const handleGenerateAll = () => {
@@ -377,7 +413,6 @@ export default function Payroll() {
                       {emp.type === 'fulltime'
                         ? `Full-time · CTC ${formatNPR(emp.ctc)}`
                         : `${emp.type} · ${formatNPR(emp.flatPay)}/mo`}
-                      {emp.gender === 'female' ? ' · 10% TDS rebate' : ''}
                       {emp.isMarried ? ' · Married threshold' : ''}
                     </div>
                   </div>
@@ -668,7 +703,7 @@ function EmployeeModal({ isOpen, onClose, employee, onSave }) {
         <div className="grid grid-cols-2 gap-3">
           <Select label="Gender" value={form.gender} onChange={e => set('gender', e.target.value)}>
             <option value="male">Male</option>
-            <option value="female">Female (10% TDS rebate)</option>
+            <option value="female">Female</option>
           </Select>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-text-secondary font-body font-medium uppercase tracking-wider">Marital Status</label>

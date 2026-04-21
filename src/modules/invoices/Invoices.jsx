@@ -39,6 +39,7 @@ function emptyInvoice(defaultNotes) {
     currency: 'NPR',
     lineItems: [{ description: '', qty: 1, rate: '' }],
     notes: defaultNotes || HARDCODED_PAYMENT_INSTRUCTIONS,
+    remarks: '',
     status: 'Draft',
     clientPersonName: '',
     servicePeriodStart: { month: bs.month, year: bs.year },
@@ -457,6 +458,15 @@ export default function Invoices() {
             value={form.notes}
             onChange={e => set('notes', e.target.value)}
             rows={5}
+          />
+
+          {/* Remarks / Comments */}
+          <Textarea
+            label="Remarks / Comments (Optional)"
+            value={form.remarks || ''}
+            onChange={e => set('remarks', e.target.value)}
+            rows={3}
+            placeholder="Add any additional remarks or comments for this invoice..."
           />
         </div>
       </Modal>

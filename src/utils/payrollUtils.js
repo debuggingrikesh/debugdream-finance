@@ -16,7 +16,7 @@ export const MAX_RETIREMENT_DEDUCTION = 500000 // SSF + CIT combined cap
 export const MAX_LIFE_INS_DEDUCTION   = 40000  // NPR 40,000
 export const MAX_HEALTH_INS_DEDUCTION = 20000  // NPR 20,000
 
-export const FEMALE_REBATE_RATE = 0.10         // 10% rebate on total tax
+
 
 // Remote Area Deductions (Annual)
 export const REMOTE_AREA_ALLOWANCE = {
@@ -31,7 +31,7 @@ export const REMOTE_AREA_ALLOWANCE = {
 /**
  * Calculate annual TDS based on precise Nepal Tax Slabs (2080/81)
  */
-export function calculateAnnualTax(taxableIncome, isMarried = false, isFemale = false, isSSFEnrolled = false) {
+export function calculateAnnualTax(taxableIncome, isMarried = false, isSSFEnrolled = false) {
   if (taxableIncome <= 0) return 0
 
   const threshold = isMarried ? TDS_THRESHOLD_MARRIED : TDS_THRESHOLD_SINGLE
@@ -79,10 +79,7 @@ export function calculateAnnualTax(taxableIncome, isMarried = false, isFemale = 
     tax += slab6Amount * 0.39
   }
 
-  // Female rebate: 10% reduction of total tax liability
-  if (isFemale && !isMarried) {
-    tax = tax * (1 - FEMALE_REBATE_RATE)
-  }
+
 
   return Math.round(tax)
 }
@@ -108,7 +105,7 @@ export function calculateFullTimePayroll(employee, ytdData = {}) {
     ytdTaxPaid = 0
   } = ytdData
 
-  const isFemale = gender === 'female'
+
   const monthlyAllowance = (allowances || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0)
 
   // 1. Derive Monthly Earnings
@@ -139,7 +136,7 @@ export function calculateFullTimePayroll(employee, ytdData = {}) {
   // Target total tax liability for income earned so far
   // We apply annual slabs directly to the YTD income. 
   // (e.g. if YTD is 400k, tax is 1% of 400k. If YTD is 600k, tax is (5k + 10k)).
-  let targetAnnualTax = calculateAnnualTax(totalTaxableIncomeYTD, isMarried, isFemale, isSSFEnrolled)
+  let targetAnnualTax = calculateAnnualTax(totalTaxableIncomeYTD, isMarried, isSSFEnrolled)
   
   // Medical Tax Credit (Applied against the target tax)
   const medicalTaxCredit = Math.min(0.15 * (parseFloat(healthInsAnnual) || 0), 750)

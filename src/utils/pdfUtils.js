@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
-import { formatByCurrency } from './formatUtils'
+import { formatByCurrency, formatNPR } from './formatUtils'
 import { BS_MONTHS, AD_MONTHS } from './dateUtils'
 import { SIGNATURE_BASE64 } from './signature.js'
 
@@ -262,6 +262,21 @@ export function generateInvoicePDF(invoice, company, logoBase64, mode = 'downloa
   doc.setFontSize(12)
   doc.text(formatByCurrency(computedTotal, invoice.currency), W - 9, summaryY + 4.5, { align: 'right' })
 
+  // ── Remarks / Comments ──────────────────────────────────────────────────
+  if (invoice.remarks && invoice.remarks.trim()) {
+    const remarksY = summaryY + 22
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...BRAND.gray)
+    doc.text('REMARKS', 14, remarksY)
+    
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...BRAND.darkGray)
+    const remarksLines = doc.splitTextToSize(invoice.remarks, W - 28)
+    doc.text(remarksLines, 14, remarksY + 5)
+  }
+
   // ── Signature (Bottom Right) ─────────────────────────────────────────────
   const sigBlockY = H - 55
   doc.setFont('helvetica', 'bold')
@@ -392,7 +407,7 @@ export function generatePayslipPDF(employee, payroll, month, company, logoBase64
     head: [['Earnings', 'Amount']],
     body: [
       ['Basic Salary', formatNPR(payroll.basic)],
-      ...(payroll.allowances || []).map(a => [a.name, formatNPR(a.amount)]),
+      ...((payroll.allowances || []).map(a => [a.name, formatNPR(a.amount)])),
       ['Gross Pay', formatNPR(payroll.grossPay)],
     ],
     theme: 'plain',
