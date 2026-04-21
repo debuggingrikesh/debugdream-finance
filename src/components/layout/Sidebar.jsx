@@ -43,21 +43,21 @@ export default function Sidebar() {
           sidebarOpen ? 'justify-between' : 'justify-center'
         )}>
           {sidebarOpen && (
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded bg-accent flex items-center justify-center shrink-0">
-                <span className="text-text-primary font-display font-black text-xs">D</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
+                <span className="text-text-primary font-display font-black text-sm">D</span>
               </div>
-              <div>
-                <div className="font-display font-bold text-text-primary text-sm leading-none">debug</div>
-                <div className="font-display font-bold text-accent text-sm leading-none">dream</div>
+              <div className="flex flex-col">
+                <span className="font-display font-bold text-text-primary text-sm tracking-tight leading-none">debug</span>
+                <span className="font-display font-bold text-accent text-sm tracking-tight leading-none">dream</span>
               </div>
             </div>
           )}
           <button
             onClick={toggleSidebar}
-            className="w-7 h-7 rounded-lg bg-bg-elevated hover:bg-bg-hover flex items-center justify-center text-text-muted hover:text-text-primary transition-colors shrink-0"
+            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted hover:text-text-primary transition-all shrink-0 border border-white/5"
           >
-            {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+            {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
 
@@ -71,25 +71,33 @@ export default function Sidebar() {
                 key={to}
                 to={to}
                 className={clsx(
-                  'flex items-center gap-3 rounded-lg px-2.5 py-2 transition-all duration-150 group relative',
-                  isActive ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated',
-                  !sidebarOpen && 'justify-center'
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 group relative',
+                  isActive 
+                    ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_20px_rgba(232,25,44,0.05)]' 
+                    : 'text-text-secondary hover:text-text-primary hover:bg-white/5',
+                  !sidebarOpen && 'justify-center mx-1'
                 )}
               >
-                <div className="relative shrink-0">
-                  <Icon size={17} />
+                <div className={clsx('relative shrink-0 transition-transform duration-200', isActive && 'scale-110')}>
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                   {isReminder && activeReminders > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-accent rounded-full text-text-primary text-[9px] flex items-center justify-center font-bold">
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent rounded-full text-text-primary text-[10px] flex items-center justify-center font-bold shadow-lg shadow-accent/40">
                       {activeReminders > 9 ? '9+' : activeReminders}
                     </span>
                   )}
                 </div>
                 {sidebarOpen && (
-                  <span className="font-body text-sm font-medium whitespace-nowrap">{label}</span>
+                  <span className={clsx('font-body text-sm font-medium whitespace-nowrap', isActive ? 'text-text-primary' : 'text-inherit')}>
+                    {label}
+                  </span>
+                )}
+                {/* Active indicator dot */}
+                {sidebarOpen && isActive && (
+                  <div className="absolute right-3 w-1 h-1 rounded-full bg-accent shadow-[0_0_10px_#E8192C]" />
                 )}
                 {/* Hover tooltip when collapsed */}
                 {!sidebarOpen && (
-                  <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-bg-elevated border border-border rounded-lg text-text-primary text-xs font-body whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl">
+                  <div className="absolute left-full ml-4 px-3 py-2 bg-bg-elevated border border-white/10 rounded-xl text-text-primary text-xs font-body whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-all z-50 shadow-2xl translate-x-1 group-hover:translate-x-0">
                     {label}
                   </div>
                 )}

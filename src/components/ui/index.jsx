@@ -8,9 +8,10 @@ export function Card({ children, className, onClick, hover = false, glow = false
     <div
       onClick={onClick}
       className={clsx(
-        'bg-bg-surface border border-border rounded-xl',
-        hover && 'cursor-pointer transition-all duration-200 hover:border-border-light hover:bg-bg-hover',
-        glow && 'hover:shadow-[0_0_20px_rgba(232,25,44,0.1)]',
+        'bg-bg-surface border border-border rounded-2xl transition-all duration-300',
+        onClick && 'cursor-pointer',
+        hover && 'hover:border-white/10 hover:bg-white/[0.03] active:scale-[0.98]',
+        glow && 'hover:shadow-[0_0_40px_rgba(232,25,44,0.08)]',
         className
       )}
     >
@@ -23,14 +24,14 @@ export function Card({ children, className, onClick, hover = false, glow = false
 export function StatCard({ label, value, sub, icon: Icon, accent = false, trend = null, loading = false }) {
   return (
     <Card className="p-4 md:p-5" hover glow={accent}>
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-[10px] md:text-xs font-body text-text-muted uppercase tracking-widest">{label}</span>
+      <div className="flex items-start justify-between mb-2">
+        <span className="text-[9px] md:text-[10px] font-display font-bold text-text-muted uppercase tracking-[0.15em]">{label}</span>
         {Icon && (
           <div className={clsx(
-            'w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center shrink-0',
-            accent ? 'bg-accent/10 text-accent' : 'bg-bg-elevated text-text-muted'
+            'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors',
+            accent ? 'bg-accent/10 text-accent border-accent/20 shadow-[0_0_15px_rgba(232,25,44,0.1)]' : 'bg-white/5 text-text-muted border-white/5'
           )}>
-            <Icon size={14} />
+            <Icon size={16} />
           </div>
         )}
       </div>
@@ -190,24 +191,25 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer })
     full: 'max-w-6xl',
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       <div className={clsx(
-        'relative w-full bg-bg-surface border border-border shadow-[0_25px_50px_rgba(0,0,0,0.8)]',
-        'flex flex-col max-h-[92vh]',
-        // On mobile: bottom sheet style; on sm+: centered rounded card
-        'rounded-t-2xl sm:rounded-2xl',
+        'relative w-full bg-bg-surface border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.9)] animate-slide-up',
+        'flex flex-col max-h-[96vh]',
+        'rounded-t-[2.5rem] sm:rounded-[2rem]',
         sizes[size]
       )}>
-        <div className="flex items-center justify-between p-4 md:p-5 border-b border-border shrink-0">
-          <h2 className="font-display font-bold text-base md:text-lg text-text-primary">{title}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-bg-elevated hover:bg-bg-hover flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors">
-            <X size={16} />
+        <div className="flex items-center justify-between p-6 md:px-8 border-b border-white/5 shrink-0">
+          <div>
+            <h2 className="font-display font-bold text-lg md:text-xl text-text-primary tracking-tight">{title}</h2>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-text-primary transition-all border border-white/5">
+            <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 md:p-5">{children}</div>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-none">{children}</div>
         {footer && (
-          <div className="p-4 md:p-5 border-t border-border shrink-0 flex items-center justify-end gap-3">
+          <div className="p-5 md:px-8 border-t border-white/5 shrink-0 flex items-center justify-end gap-3 bg-white/[0.02]">
             {footer}
           </div>
         )}
@@ -290,26 +292,26 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', loa
   }
   return (
     // negative margin bleeds to card edge on mobile so scrollbar aligns with content
-    <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5">
-      <table className="w-full" style={{ minWidth }}>
+    <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5 scrollbar-none">
+      <table className="ledger-table" style={{ minWidth }}>
         <thead>
-          <tr className="border-b border-border">
+          <tr>
             {columns.map((col, i) => (
-              <th key={i} className="pb-3 text-left text-xs text-text-muted font-body font-medium uppercase tracking-wider" style={{ textAlign: col.align || 'left' }}>
+              <th key={i} className="ledger-header" style={{ textAlign: col.align || 'left' }}>
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-bg-elevated">
+        <tbody>
           {data.map((row, ri) => (
             <tr
               key={row.id || ri}
               onClick={() => onRowClick?.(row)}
-              className={clsx('transition-colors duration-100', onRowClick && 'cursor-pointer hover:bg-bg-elevated')}
+              className={clsx('ledger-row', onRowClick && 'cursor-pointer')}
             >
               {columns.map((col, ci) => (
-                <td key={ci} className="py-3 text-sm font-body text-text-secondary" style={{ textAlign: col.align || 'left' }}>
+                <td key={ci} className="ledger-cell" style={{ textAlign: col.align || 'left' }}>
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}

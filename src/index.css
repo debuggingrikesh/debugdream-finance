@@ -1,17 +1,19 @@
 /* ── Theme tokens ─────────────────────────────────────────────────────────── */
 :root {
   color-scheme: dark;
-  --color-bg-primary:     #0a0a0a;
-  --color-bg-surface:     #111111;
-  --color-bg-elevated:    #1a1a1a;
-  --color-bg-hover:       #222222;
-  --color-border:         #2a2a2a;
-  --color-border-light:   #333333;
+  --color-bg-primary:     #050505;
+  --color-bg-surface:     #0c0c0c;
+  --color-bg-elevated:    #141414;
+  --color-bg-hover:       #1a1a1a;
+  --color-border:         #1f1f1f;
+  --color-border-light:   #262626;
   --color-text-primary:   #ffffff;
-  --color-text-secondary: #888888;
-  --color-text-muted:     #555555;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted:     #52525b;
   --color-accent:         #E8192C;
-  --color-accent-dim:     rgba(232, 25, 44, 0.10);
+  --color-accent-dim:     rgba(232, 25, 44, 0.12);
+  --glass-bg:             rgba(12, 12, 12, 0.7);
+  --glass-border:         rgba(255, 255, 255, 0.05);
 }
 
 html.light {
@@ -119,6 +121,21 @@ html.light ::-webkit-scrollbar-thumb {
     display: none;
   }
 
+  .bg-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-card {
+    @apply bg-glass rounded-2xl shadow-2xl;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 15px var(--color-accent-dim);
+  }
+
   /* Grain texture overlay */
   .grain-overlay::before {
     content: '';
@@ -163,6 +180,20 @@ html.light ::-webkit-scrollbar-thumb {
 
   .num {
     font-family: 'DM Mono', monospace;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ledger-table {
+    @apply w-full text-left border-separate border-spacing-0;
+  }
+  .ledger-header {
+    @apply text-text-muted font-display font-medium text-[10px] uppercase tracking-widest border-b border-border pb-2 px-3;
+  }
+  .ledger-row {
+    @apply hover:bg-bg-elevated transition-colors duration-150;
+  }
+  .ledger-cell {
+    @apply py-3 px-3 border-b border-border text-sm font-body;
   }
 }

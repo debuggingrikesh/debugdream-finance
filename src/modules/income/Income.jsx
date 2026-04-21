@@ -190,18 +190,27 @@ export default function Income() {
       />
 
       {/* ── Summary cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Total Income</div>
-          <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(totalIncome)}</div>
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
+        <Card className="p-4 md:p-5 glass-card group">
+          <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-accent transition-colors">Total Income</div>
+          <div className="font-mono text-text-primary text-xl md:text-2xl font-bold leading-none">{formatNPR(totalIncome)}</div>
+          <div className="w-full h-1 bg-accent/10 mt-3 rounded-full overflow-hidden">
+            <div className="h-full bg-accent w-full" />
+          </div>
         </Card>
-        <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
-          <div className="font-mono text-blue-400 text-xl font-bold">{formatNPR(totalBank)}</div>
+        <Card className="p-4 md:p-5 glass-card group">
+          <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-blue-400 transition-colors">Bank Ledger</div>
+          <div className="font-mono text-blue-400 text-xl md:text-2xl font-bold leading-none">{formatNPR(totalBank)}</div>
+          <div className="w-full h-1 bg-blue-400/10 mt-3 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-400" style={{ width: `${totalIncome > 0 ? (totalBank / totalIncome) * 100 : 0}%` }} />
+          </div>
         </Card>
-        <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
-          <div className="font-mono text-yellow-400 text-xl font-bold">{formatNPR(totalCash)}</div>
+        <Card className="p-4 md:p-5 glass-card group">
+          <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-yellow-400 transition-colors">Cash Ledger</div>
+          <div className="font-mono text-yellow-400 text-xl md:text-2xl font-bold leading-none">{formatNPR(totalCash)}</div>
+          <div className="w-full h-1 bg-yellow-400/10 mt-3 rounded-full overflow-hidden">
+            <div className="h-full bg-yellow-400" style={{ width: `${totalIncome > 0 ? (totalCash / totalIncome) * 100 : 0}%` }} />
+          </div>
         </Card>
       </div>
 
@@ -212,32 +221,37 @@ export default function Income() {
             key={c}
             onClick={() => setFilterClient(c)}
             className={clsx(
-              'px-3 py-1 rounded-full text-xs font-body border transition-all',
+              'px-4 py-1.5 rounded-xl text-xs font-display font-medium border transition-all duration-200',
               filterClient === c
-                ? 'bg-accent text-text-primary border-transparent'
-                : 'border-border text-text-muted hover:text-text-primary hover:border-border-light'
+                ? 'bg-accent text-text-primary border-accent shadow-lg shadow-accent/20'
+                : 'bg-white/5 border-white/5 text-text-secondary hover:text-text-primary hover:border-white/10 hover:bg-white/10'
             )}
           >
-            {c === 'all' ? 'All clients' : c}
+            {c === 'all' ? 'All Clients' : c}
           </button>
         ))}
       </div>
 
       {/* Client summary */}
       {clientSummary.length > 0 && (
-        <Card className="p-5">
-          <h3 className="font-display font-bold text-text-primary text-sm mb-4">Client Summary · {monthLabel}</h3>
-          <div className="space-y-2">
+        <Card className="p-5 glass-card">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-display font-bold text-text-primary text-sm tracking-tight">Client Revenue Distribution</h3>
+            <span className="text-[10px] text-text-muted font-mono uppercase">{monthLabel}</span>
+          </div>
+          <div className="space-y-4">
             {clientSummary.map(([client, amount]) => (
-              <div key={client} className="flex items-center gap-3">
-                <span className="text-sm font-body text-text-secondary w-24 truncate">{client}</span>
-                <div className="flex-1 h-1.5 bg-bg-elevated rounded-full overflow-hidden">
+              <div key={client} className="group cursor-default">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-body text-text-secondary font-medium group-hover:text-text-primary transition-colors">{client}</span>
+                  <span className="font-mono text-text-primary text-xs font-bold">{formatNPR(amount)}</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden ring-1 ring-white/[0.02]">
                   <div
-                    className="h-full bg-accent rounded-full"
+                    className="h-full bg-accent rounded-full transition-all duration-700 ease-out group-hover:shadow-[0_0_10px_#E8192C]"
                     style={{ width: `${totalIncome > 0 ? (amount / totalIncome) * 100 : 0}%` }}
                   />
                 </div>
-                <span className="font-mono text-text-primary text-sm w-28 text-right">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>
@@ -245,16 +259,21 @@ export default function Income() {
       )}
 
       {/* ── Transactions table ─────────────────────────────────────────────── */}
-      <Card className="p-5">
-        <h3 className="font-display font-bold text-text-primary text-sm mb-4">
-          Transactions · {filtered.length} entries
-        </h3>
+      <Card className="p-0 overflow-hidden glass-card border-none ring-1 ring-white/5">
+        <div className="p-5 border-b border-white/5 flex items-center justify-between">
+          <h3 className="font-display font-bold text-text-primary text-sm tracking-tight">
+            Transaction Ledger
+          </h3>
+          <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{filtered.length} entries</span>
+        </div>
         {filtered.length === 0 && !loading ? (
-          <EmptyState
-            icon={ArrowUpRight}
-            title="No income recorded"
-            description={`No income entries for ${monthLabel}. Add your first income entry above.`}
-          />
+          <div className="p-10">
+            <EmptyState
+              icon={ArrowUpRight}
+              title="No income recorded"
+              description={`No income entries for ${monthLabel}. Add your first income entry above.`}
+            />
+          </div>
         ) : (
           <Table columns={columns} data={filtered} loading={loading} />
         )}

@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, Sector, Label
 } from 'recharts'
 import {
   TrendingUp, TrendingDown, Wallet, Landmark, Banknote,
@@ -15,18 +15,42 @@ import { getFiscalYearMonths, BS_MONTHS } from '../../utils/dateUtils'
 import { StatCard, Card, Badge, SectionHeader, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
 
-const PIE_COLORS = ['#E8192C', '#ff6b6b', '#ff9f43', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd']
+// ─── Custom components for Chart ──────────────────────────────────────
+const renderActiveShape = (props) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
+  return (
+    <g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 6}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      <Sector
+        cx={cx}
+        cy={cy}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        innerRadius={outerRadius + 8}
+        outerRadius={outerRadius + 10}
+        fill={fill}
+      />
+    </g>
+  )
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-bg-elevated border border-border rounded-xl p-3 shadow-2xl">
-      <p className="text-xs text-text-muted font-body mb-2">{label}</p>
+    <div className="bg-glass rounded-xl p-3 shadow-2xl backdrop-blur-md border border-white/10">
+      <p className="text-[10px] text-text-secondary font-display uppercase tracking-wider mb-2">{label}</p>
       {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs">
+        <div key={i} className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-text-secondary">{p.name}:</span>
-          <span className="font-mono text-text-primary">{formatNPR(p.value)}</span>
+          <span className="text-text-primary font-mono">{formatNPR(p.value)}</span>
         </div>
       ))}
     </div>
@@ -34,6 +58,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function Dashboard() {
+  const [activeIndex, setActiveIndex] = useState(0)
   useInvoiceReminders()
   const { selectedMonth, currentFY, bankBalance, cashBalance } = useApp()
   const { data: allIncome,   loading: incomeLoading } = useAllIncome()
@@ -89,25 +114,25 @@ export default function Dashboard() {
 
       {/* ── Stat cards: 2 col → 3 col (sm) → 5 col (lg) ─────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
-        <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}                               loading={loading} />
-        <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                             loading={loading} />
-        <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} />
-        <StatCard label="Bank Balance (NPR)" value={formatNPR(bankBalance)}   icon={Landmark}                                loading={loading} />
-        <StatCard label="Cash in Hand (NPR)" value={formatNPR(cashBalance)}   icon={Banknote}                                loading={loading} />
+        <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}   accent={true}  loading={loading} className="glass-card" />
+        <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                loading={loading} className="glass-card" />
+        <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} className="glass-card" />
+        <StatCard label="Bank Balance (NPR)" value={formatNPR(bankBalance)}   icon={Landmark}                loading={loading} className="glass-card" />
+        <StatCard label="Cash in Hand (NPR)" value={formatNPR(cashBalance)}   icon={Banknote}                loading={loading} className="glass-card" />
       </div>
 
       {/* ── Charts: stacked on mobile, side-by-side on lg ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* Bar chart */}
-        <Card className="p-4 md:p-5 lg:col-span-2">
+        <Card className="p-4 md:p-5 lg:col-span-2 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-display font-bold text-text-primary text-sm md:text-base">Income vs Expenses</h2>
-              <p className="text-xs text-text-muted font-body">{currentFY.label} · All 12 months</p>
+              <h2 className="font-display font-bold text-text-primary text-sm md:text-base">Monthly Overview</h2>
+              <p className="text-xs text-text-muted font-body">{currentFY.label} · Comparison</p>
             </div>
-            <div className="flex items-center gap-3 text-xs font-body text-text-muted">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-accent inline-block" />Inc</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-border inline-block" />Exp</span>
+            <div className="flex items-center gap-3 text-[10px] font-mono tracking-tighter uppercase text-text-muted">
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-accent" />Income</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-white/10" />Expense</span>
             </div>
           </div>
           {loading ? (
@@ -115,19 +140,22 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={190}>
               <BarChart data={fyChartData} barGap={2}>
-                <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={44} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={40} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="income"   fill="var(--color-accent)" radius={[4,4,0,0]} maxBarSize={18} />
-                <Bar dataKey="expenses" fill="var(--color-border)" radius={[4,4,0,0]} maxBarSize={18} />
+                <Bar dataKey="income"   fill="var(--color-accent)" radius={[3,3,0,0]} maxBarSize={14} />
+                <Bar dataKey="expenses" fill="rgba(255,255,255,0.05)" radius={[3,3,0,0]} maxBarSize={14} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </Card>
 
         {/* Pie chart */}
-        <Card className="p-4 md:p-5">
-          <h2 className="font-display font-bold text-text-primary text-sm md:text-base mb-1">By Category</h2>
+        <Card className="p-4 md:p-5 glass-card">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-display font-bold text-text-primary text-sm md:text-base">By Category</h2>
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          </div>
           <p className="text-xs text-text-muted font-body mb-3">{monthLabel}</p>
           {loading ? (
             <div className="h-36 bg-bg-elevated rounded-xl animate-pulse" />
@@ -136,27 +164,60 @@ export default function Dashboard() {
               <p className="text-text-muted text-sm font-body">No expenses this month</p>
             </div>
           ) : (
-            <>
-              <ResponsiveContainer width="100%" height={130}>
-                <PieChart>
-                  <Pie data={expenseByCategory} cx="50%" cy="50%" innerRadius={36} outerRadius={58} paddingAngle={3} dataKey="value">
-                    {expenseByCategory.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-1.5 mt-2">
-                {expenseByCategory.slice(0, 4).map((cat, i) => (
-                  <div key={cat.name} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span className="text-text-secondary font-body truncate max-w-[90px]">{cat.name}</span>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <div className="w-full h-[140px] shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie 
+                      data={expenseByCategory} 
+                      cx="50%" cy="50%" 
+                      innerRadius={40} 
+                      outerRadius={55} 
+                      stroke="none" 
+                      paddingAngle={2} 
+                      dataKey="value"
+                      activeIndex={activeIndex}
+                      activeShape={renderActiveShape}
+                      onMouseEnter={(_, index) => setActiveIndex(index)}
+                    >
+                      {expenseByCategory.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      <Label 
+                        content={({ viewBox }) => {
+                          const { cx, cy } = viewBox
+                          return (
+                            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
+                              <tspan x={cx} y={cy - 2} className="fill-text-muted text-[8px] uppercase tracking-tighter">Total</tspan>
+                              <tspan x={cx} y={cy + 10} className="fill-text-primary text-xs font-bold font-mono">
+                                {formatCompact(totalExpenses)}
+                              </tspan>
+                            </text>
+                          )
+                        }}
+                      />
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full space-y-1.5 overflow-y-auto max-h-[140px] scrollbar-none pr-1">
+                {expenseByCategory.map((cat, i) => (
+                  <div 
+                    key={cat.name} 
+                    onMouseEnter={() => setActiveIndex(i)}
+                    className={clsx(
+                      "flex items-center justify-between text-xs p-1.5 rounded-lg transition-all duration-200 cursor-pointer",
+                      activeIndex === i ? "bg-white/5" : "opacity-70 hover:opacity-100"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span className="text-text-secondary font-body truncate">{cat.name}</span>
                     </div>
-                    <span className="font-mono text-text-primary">{formatNPR(cat.value)}</span>
+                    <span className="font-mono text-text-primary font-medium">{formatNPR(cat.value)}</span>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </Card>
       </div>

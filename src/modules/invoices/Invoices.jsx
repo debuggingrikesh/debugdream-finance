@@ -207,13 +207,12 @@ export default function Invoices() {
       />
 
       {/* Status summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {['Draft', 'Sent', 'Paid', 'Overdue'].map(status => {
-          const { color } = STATUS_CONFIG[status]
+          const { color, icon: Icon } = STATUS_CONFIG[status]
           const statusInvoices = invoices.filter(i => i.status === status)
           const count = statusInvoices.length
           
-          // Calculate totals per currency
           const totals = statusInvoices.reduce((acc, inv) => {
             const curr = inv.currency || 'NPR'
             acc[curr] = (acc[curr] || 0) + (inv.total || 0)
@@ -223,17 +222,33 @@ export default function Invoices() {
           return (
             <Card
               key={status}
-              className={clsx('p-3 md:p-4 cursor-pointer', filterStatus === status && 'border-accent')}
+              className={clsx(
+                'p-4 md:p-5 glass-card relative overflow-hidden group',
+                filterStatus === status ? 'border-accent shadow-accent/10' : 'opacity-80 hover:opacity-100'
+              )}
               hover
               onClick={() => setFilterStatus(filterStatus === status ? 'all' : status)}
             >
-              <Badge variant={color}>{status}</Badge>
-              <div className="mt-2 font-mono text-text-primary text-lg font-bold">{count}</div>
-              <div className="text-[10px] text-text-muted font-mono space-y-0.5 mt-1">
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant={color}>{status}</Badge>
+                <div className="p-1.5 rounded-lg bg-white/5 text-text-muted group-hover:text-text-primary transition-colors">
+                  <Icon size={14} />
+                </div>
+              </div>
+              <div className="font-display font-bold text-2xl text-text-primary leading-none mb-3">{count}</div>
+              <div className="space-y-1">
                 {Object.entries(totals).map(([curr, amt]) => (
-                  <div key={curr}>{formatByCurrency(amt, curr)}</div>
+                  <div key={curr} className="flex items-center justify-between">
+                    <span className="text-[10px] text-text-muted font-display uppercase tracking-wider">{curr}</span>
+                    <span className="text-xs text-text-secondary font-mono">{formatByCurrency(amt, curr).replace(curr, '').trim()}</span>
+                  </div>
                 ))}
-                {count === 0 && <div>NPR 0</div>}
+                {count === 0 && (
+                   <div className="flex items-center justify-between opacity-30">
+                     <span className="text-[10px] text-text-muted font-display uppercase tracking-wider">NPR</span>
+                     <span className="text-xs text-text-secondary font-mono">0.00</span>
+                   </div>
+                )}
               </div>
             </Card>
           )
@@ -241,81 +256,95 @@ export default function Invoices() {
       </div>
 
       {/* Client filter pills */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap pb-2">
         {['all', ...clients].map(c => (
           <button
             key={c}
             onClick={() => setFilterClient(c)}
             className={clsx(
-              'px-3 py-1 rounded-full text-xs font-body border transition-all',
+              'px-4 py-1.5 rounded-xl text-xs font-display font-medium border transition-all duration-200',
               filterClient === c
-                ? 'bg-accent text-text-primary border-transparent'
-                : 'border-border text-text-muted hover:text-text-primary hover:border-border-light'
+                ? 'bg-accent text-text-primary border-accent shadow-lg shadow-accent/20'
+                : 'bg-white/5 border-white/5 text-text-secondary hover:text-text-primary hover:border-white/10 hover:bg-white/10'
             )}
           >
-            {c === 'all' ? 'All clients' : c}
+            {c === 'all' ? 'All Clients' : c}
           </button>
         ))}
       </div>
 
       {/* Invoice list */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {loading ? (
-          <div className="space-y-2">{[1, 2, 3].map(i => <div key={i} className="h-20 bg-bg-surface rounded-xl animate-pulse" />)}</div>
+          <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-[2rem] animate-pulse" />)}</div>
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No invoices"
-            description="Create your first invoice above."
+            title="No invoices found"
+            description="Adjust your filters or create a new invoice to get started."
             action={<Button onClick={openAdd} icon={Plus}>New Invoice</Button>}
           />
         ) : (
           filtered.map(inv => {
             const { color } = STATUS_CONFIG[inv.status] || STATUS_CONFIG.Draft
             return (
-              <Card key={inv.id} className="p-3 md:p-4" hover>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-bg-elevated flex items-center justify-center shrink-0">
-                      <FileText size={15} className="text-text-muted" />
+              <Card key={inv.id} className="p-4 md:p-6 group relative overflow-hidden" hover>
+                {/* Active hover indicator */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-r-full" />
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5 transition-colors group-hover:bg-accent/10 group-hover:border-accent/20">
+                      <FileText size={20} className={clsx("transition-colors", inv.status === 'Paid' ? 'text-green-400' : 'text-text-muted group-hover:text-accent')} />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-display font-bold text-text-primary text-sm">{inv.invoiceNumber}</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-display font-bold text-text-primary text-base md:text-lg tracking-tight">{inv.invoiceNumber}</span>
                         <Badge variant={color}>{inv.status}</Badge>
                       </div>
-                      <div className="text-xs text-text-muted font-body mt-0.5">
-                        {inv.clientName} · {inv.invoiceDate}{inv.dueDate ? ` · Due ${inv.dueDate}` : ''}
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-text-secondary font-body">
+                        <span className="font-medium text-text-primary">{inv.clientName}</span>
+                        <span className="text-text-muted">·</span>
+                        <span>Issued {inv.invoiceDate}</span>
+                        {inv.dueDate && (
+                          <>
+                             <span className="text-text-muted">·</span>
+                             <span className={clsx(inv.status === 'Overdue' ? 'text-red-400 font-medium' : 'text-text-muted')}>Due {inv.dueDate}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <div className="font-mono text-text-primary font-bold text-sm md:text-base">
-                      {formatByCurrency(inv.total, inv.currency)}
+                  <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none border-white/5 pt-4 md:pt-0">
+                    <div className="text-left md:text-right shrink-0">
+                      <div className="font-mono text-text-primary font-bold text-lg md:text-xl tracking-tight leading-none mb-1">
+                        {formatByCurrency(inv.total, inv.currency)}
+                      </div>
+                      <div className="text-[10px] text-text-muted font-display uppercase tracking-[0.2em]">{inv.currency} Ledger</div>
                     </div>
-                    <div className="text-xs text-text-muted">{inv.currency}</div>
-                  </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    {inv.status === 'Draft' && (
-                      <Button variant="secondary" size="xs" icon={Send} onClick={() => markSent(inv)}>Send</Button>
-                    )}
-                    {inv.status === 'Sent' && (
-                      <Button variant="success" size="xs" icon={CheckCircle} onClick={() => handleMarkPaid(inv)}>Paid</Button>
-                    )}
-                    <button onClick={() => handlePreview(inv)} title="Preview" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-accent transition-colors">
-                      <Eye size={13} />
-                    </button>
-                    <button onClick={() => handlePDF(inv)} title="Download" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
-                      <Download size={13} />
-                    </button>
-                    <button onClick={() => openEdit(inv)} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
-                      <Pencil size={13} />
-                    </button>
-                    <button onClick={() => setDeleteId(inv.id)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {inv.status === 'Draft' && (
+                        <Button variant="outline" size="sm" icon={Send} onClick={() => markSent(inv)} className="rounded-xl border-white/10 hover:border-accent hover:text-accent">Send</Button>
+                      )}
+                      {inv.status === 'Sent' && (
+                        <Button variant="success" size="sm" icon={CheckCircle} onClick={() => handleMarkPaid(inv)} className="rounded-xl border-green-500/20">Mark Paid</Button>
+                      )}
+                      <div className="h-8 w-[1px] bg-white/5 mx-1 hidden md:block" />
+                      <button onClick={() => handlePreview(inv)} title="Preview" className="w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center text-text-muted hover:text-accent transition-all border border-transparent hover:border-white/10">
+                        <Eye size={16} />
+                      </button>
+                      <button onClick={() => handlePDF(inv)} title="Download" className="w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center text-text-muted hover:text-text-primary transition-all border border-transparent hover:border-white/10">
+                        <Download size={16} />
+                      </button>
+                      <button onClick={() => openEdit(inv)} title="Edit" className="w-9 h-9 rounded-xl hover:bg-white/5 flex items-center justify-center text-text-muted hover:text-text-primary transition-all border border-transparent hover:border-white/10">
+                        <Pencil size={16} />
+                      </button>
+                      <button onClick={() => setDeleteId(inv.id)} title="Delete" className="w-9 h-9 rounded-xl hover:bg-red-500/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-all border border-transparent hover:border-red-500/20">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>
