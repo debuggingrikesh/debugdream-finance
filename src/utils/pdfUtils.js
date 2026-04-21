@@ -206,6 +206,9 @@ export function generateInvoicePDF(invoice, company, logoBase64, mode = 'downloa
   const computedSubtotal = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.rate || 0)), 0)
   const computedTotal = invoice.total || computedSubtotal
 
+  // Track the bottom of the left column (notes + remarks)
+  let leftColumnBottom = summaryY
+
   // -- Notes / Payment Info (Left Side) --
   if (invoice.notes) {
     doc.setFont('helvetica', 'bold')
@@ -221,9 +224,39 @@ export function generateInvoicePDF(invoice, company, logoBase64, mode = 'downloa
     doc.setFillColor(...BRAND.offWhite)
     doc.setDrawColor(...BRAND.lightGray)
     doc.setLineWidth(0.2)
-    doc.roundedRect(14, summaryY + 3, W - 100, (lines.length * 4.5) + 6, 2, 2, 'FD')
+    const notesBoxH = (lines.length * 4.5) + 6
+    doc.roundedRect(14, summaryY + 3, W - 100, notesBoxH, 2, 2, 'FD')
     
     doc.text(lines, 18, summaryY + 9)
+    leftColumnBottom = summaryY + 3 + notesBoxH + 4
+  }
+
+  // -- Remarks / Comments (Left Side, below notes) --
+  if (invoice.remarks && invoice.remarks.trim()) {
+    const remarksY = leftColumnBottom + 2
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...BRAND.red)
+    doc.text('REMARKS', 14, remarksY)
+    
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...BRAND.darkGray)
+    const remarksLines = doc.splitTextToSize(invoice.remarks, W - 95)
+    
+    // Subtle left-border accent style
+    const remarksBoxH = (remarksLines.length * 4.5) + 6
+    doc.setFillColor(255, 250, 250)  // very faint red tint
+    doc.setDrawColor(...BRAND.lightGray)
+    doc.setLineWidth(0.2)
+    doc.roundedRect(14, remarksY + 3, W - 100, remarksBoxH, 2, 2, 'FD')
+    
+    // Red accent bar on the left edge
+    doc.setFillColor(...BRAND.red)
+    doc.rect(14, remarksY + 3, 1.5, remarksBoxH, 'F')
+    
+    doc.text(remarksLines, 20, remarksY + 9)
   }
 
   // -- Totals (Right Side) --
@@ -261,21 +294,6 @@ export function generateInvoicePDF(invoice, company, logoBase64, mode = 'downloa
   
   doc.setFontSize(12)
   doc.text(formatByCurrency(computedTotal, invoice.currency), W - 9, summaryY + 4.5, { align: 'right' })
-
-  // ── Remarks / Comments ──────────────────────────────────────────────────
-  if (invoice.remarks && invoice.remarks.trim()) {
-    const remarksY = summaryY + 22
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
-    doc.setTextColor(...BRAND.gray)
-    doc.text('REMARKS', 14, remarksY)
-    
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8.5)
-    doc.setTextColor(...BRAND.darkGray)
-    const remarksLines = doc.splitTextToSize(invoice.remarks, W - 28)
-    doc.text(remarksLines, 14, remarksY + 5)
-  }
 
   // ── Signature (Bottom Right) ─────────────────────────────────────────────
   const sigBlockY = H - 55
