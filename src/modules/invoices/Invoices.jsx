@@ -60,6 +60,12 @@ export default function Invoices() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterClient, setFilterClient] = useState('all')
   const [previewUrl,   setPreviewUrl]   = useState(null)
+  
+  // ── Payment conversion modal state ──────────────────────────────────────────
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState(null)
+  const [nprEquivalent, setNprEquivalent] = useState('')
+  const [markingPaid, setMarkingPaid] = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -126,24 +132,43 @@ export default function Invoices() {
 
   // ── Status transitions ─────────────────────────────────────────────────────
   const markSent = async (inv) => updateInvoice(inv.id, { status: 'Sent', sentDate: todayString() })
-  const markPaid = async (inv) => {
-    await updateInvoice(inv.id, { status: 'Paid', paidDate: todayString() })
-    
-    // Automated Income Entry
-    const today = todayString()
-    const bs = adToBS(today)
-    await addDocument('income', {
-      date: today,
-      clientName: inv.clientName,
-      description: `Payment for Invoice #${inv.invoiceNumber}`,
-      amount: inv.total,
-      paymentSource: 'bank',
-      linkedInvoice: inv.id,
-      bsYear: bs.year,
-      bsMonth: bs.month,
-      bsDay: bs.day,
-      bsMonthName: bs.monthName,
-    })
+  
+  const handleMarkPaid = (inv) => {
+    if (inv.currency === 'NPR') {
+      executeMarkPaid(inv, inv.total)
+    } else {
+      setSelectedInvoice(inv)
+      setNprEquivalent('')
+      setShowPaymentModal(true)
+    }
+  }
+
+  const executeMarkPaid = async (inv, nprAmount) => {
+    setMarkingPaid(true)
+    try {
+      await updateInvoice(inv.id, { status: 'Paid', paidDate: todayString(), nprEquivalent: parseFloat(nprAmount) || 0 })
+      
+      // Automated Income Entry
+      const today = todayString()
+      const bs = adToBS(today)
+      await addDocument('income', {
+        date: today,
+        clientName: inv.clientName,
+        description: `Payment for Invoice #${inv.invoiceNumber}${inv.currency !== 'NPR' ? ` (${formatByCurrency(inv.total, inv.currency)})` : ''}`,
+        amount: parseFloat(nprAmount) || 0,
+        originalAmount: inv.total,
+        originalCurrency: inv.currency,
+        paymentSource: 'bank',
+        linkedInvoice: inv.id,
+        bsYear: bs.year,
+        bsMonth: bs.month,
+        bsDay: bs.day,
+        bsMonthName: bs.monthName,
+      })
+      setShowPaymentModal(false)
+    } finally {
+      setMarkingPaid(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -185,8 +210,16 @@ export default function Invoices() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         {['Draft', 'Sent', 'Paid', 'Overdue'].map(status => {
           const { color } = STATUS_CONFIG[status]
-          const count = invoices.filter(i => i.status === status).length
-          const total = invoices.filter(i => i.status === status).reduce((s, i) => s + (i.total || 0), 0)
+          const statusInvoices = invoices.filter(i => i.status === status)
+          const count = statusInvoices.length
+          
+          // Calculate totals per currency
+          const totals = statusInvoices.reduce((acc, inv) => {
+            const curr = inv.currency || 'NPR'
+            acc[curr] = (acc[curr] || 0) + (inv.total || 0)
+            return acc
+          }, {})
+
           return (
             <Card
               key={status}
@@ -196,7 +229,12 @@ export default function Invoices() {
             >
               <Badge variant={color}>{status}</Badge>
               <div className="mt-2 font-mono text-text-primary text-lg font-bold">{count}</div>
-              <div className="text-xs text-text-muted font-mono">{formatNPR(total)}</div>
+              <div className="text-[10px] text-text-muted font-mono space-y-0.5 mt-1">
+                {Object.entries(totals).map(([curr, amt]) => (
+                  <div key={curr}>{formatByCurrency(amt, curr)}</div>
+                ))}
+                {count === 0 && <div>NPR 0</div>}
+              </div>
             </Card>
           )
         })}
@@ -264,7 +302,7 @@ export default function Invoices() {
                       <Button variant="secondary" size="xs" icon={Send} onClick={() => markSent(inv)}>Send</Button>
                     )}
                     {inv.status === 'Sent' && (
-                      <Button variant="success" size="xs" icon={CheckCircle} onClick={() => markPaid(inv)}>Paid</Button>
+                      <Button variant="success" size="xs" icon={CheckCircle} onClick={() => handleMarkPaid(inv)}>Paid</Button>
                     )}
                     <button onClick={() => handlePreview(inv)} title="Preview" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-accent transition-colors">
                       <Eye size={13} />
@@ -479,6 +517,53 @@ export default function Invoices() {
         message="This will permanently delete this invoice. Cannot be undone."
         confirmLabel="Delete"
       />
+
+      {/* ── Payment Conversion Modal ────────────────────────────────────────── */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        title="Confirm Payment Received"
+        size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowPaymentModal(false)}>Cancel</Button>
+            <Button 
+                onClick={() => executeMarkPaid(selectedInvoice, nprEquivalent)} 
+                loading={markingPaid}
+                disabled={!nprEquivalent}
+            >
+              Confirm Received
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-accent/5 border border-accent/20 rounded-xl">
+            <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-2">Invoice Amount</div>
+            <div className="font-mono text-text-primary text-xl font-bold">
+              {selectedInvoice && formatByCurrency(selectedInvoice.total, selectedInvoice.currency)}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm text-text-secondary font-body">
+              How much **NPR** did you receive in your bank for this invoice?
+            </p>
+            <Input 
+              label="Amount Received (NPR)" 
+              type="number" 
+              prefix="NPR"
+              value={nprEquivalent}
+              onChange={e => setNprEquivalent(e.target.value)}
+              placeholder="e.g. 45000"
+              autoFocus
+            />
+            <p className="text-[10px] text-text-muted font-body italic">
+              * This will be recorded in your Income ledger for accurate balance tracking.
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── Preview Modal ──────────────────────────────────────────────────── */}
       {previewUrl && (

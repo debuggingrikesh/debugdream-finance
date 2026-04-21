@@ -110,7 +110,7 @@ export default function Income() {
   // ── Export CSV ─────────────────────────────────────────────────────────────
   const exportCSV = () => {
     const rows = [
-      ['Date AD', 'BS Date', 'Client', 'Description', 'Amount NPR', 'Source', 'Invoice'],
+      ['Date AD', 'BS Date', 'Client', 'Description', 'Amount (NPR Eq.)', 'Source', 'Invoice'],
       ...filtered.map(t => [
         t.date, `${t.bsDay} ${t.bsMonthName} ${t.bsYear}`,
         t.clientName, t.description, t.amount, t.paymentSource, t.linkedInvoice || ''
@@ -150,9 +150,18 @@ export default function Income() {
       render: (row) => <SourceBadge source={row.paymentSource} />
     },
     {
-      header: 'Amount',
+      header: 'Amount (NPR)',
       align: 'right',
-      render: (row) => <span className="font-mono text-green-400 text-sm">+{formatNPR(row.amount)}</span>
+      render: (row) => (
+        <div className="flex flex-col items-end">
+          <span className="font-mono text-green-400 text-sm">+{formatNPR(row.amount)}</span>
+          {row.originalCurrency && row.originalCurrency !== 'NPR' && (
+            <span className="text-[10px] text-text-muted font-mono">
+              ~ {row.originalCurrency} {row.originalAmount}
+            </span>
+          )}
+        </div>
+      )
     },
     {
       header: '',
@@ -295,7 +304,7 @@ export default function Income() {
           <Input label="Description / Notes" value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Monthly retainer payment" />
 
           {/* Amount */}
-          <Input label="Amount (NPR)" type="number" prefix="NPR" value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0" />
+          <Input label="Amount (NPR Equivalent)" type="number" prefix="NPR" value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0" />
 
           {/* Payment source */}
           <div>

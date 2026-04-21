@@ -14,9 +14,8 @@ function clientForm() {
     currency: 'NPR',
     address: '',
     contactPerson: '',
-    email: '',
-    recurring: false,
-    recurringAmount: '',
+    reminderEnabled: false,
+    reminderDay: 1,
     notes: '',
   }
 }
@@ -53,6 +52,8 @@ export default function Clients() {
       email: client.email || '',
       recurring: client.recurring || false,
       recurringAmount: client.recurringAmount || '',
+      reminderEnabled: client.reminderEnabled || false,
+      reminderDay: client.reminderDay || 1,
       notes: client.notes || '',
     })
     setShowForm(true)
@@ -214,13 +215,56 @@ export default function Clients() {
               </button>
             </div>
             {form.recurring && (
-              <Input
-                label="Recurring Amount"
-                type="number"
-                value={form.recurringAmount}
-                onChange={e => set('recurringAmount', e.target.value)}
-                placeholder="Monthly recurring amount"
-              />
+              <div className="space-y-3 pt-2">
+                <Input
+                  label="Recurring Amount"
+                  type="number"
+                  value={form.recurringAmount}
+                  onChange={e => set('recurringAmount', e.target.value)}
+                  placeholder="Monthly recurring amount"
+                />
+
+                <div className="grid grid-cols-1 gap-2 pt-1">
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <div>
+                      <div className="text-xs text-text-primary font-medium">Invoice Reminder</div>
+                      <div className="text-[10px] text-text-muted">Auto-create reminder on day {form.reminderDay}</div>
+                    </div>
+                    <button
+                      onClick={() => set('reminderEnabled', !form.reminderEnabled)}
+                      className={clsx(
+                        'w-9 h-5 rounded-full transition-colors relative',
+                        form.reminderEnabled ? 'bg-green-500' : 'bg-border'
+                      )}
+                    >
+                      <div className={clsx(
+                        'w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform',
+                        form.reminderEnabled ? 'translate-x-4' : 'translate-x-0.5'
+                      )} />
+                    </button>
+                  </div>
+                  {form.reminderEnabled && (
+                    <div className="animate-in slide-in-from-top-1 duration-200">
+                      <Input
+                        label={form.currency === 'NPR' ? 'Reminder Day (BS Calendar)' : 'Reminder Day (AD Calendar)'}
+                        type="number"
+                        min={1}
+                        max={32}
+                        value={form.reminderDay}
+                        onChange={e => set('reminderDay', Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
+                        placeholder="1-31"
+                        prefix="Day"
+                      />
+                      <p className="text-[9px] text-text-muted mt-1 leading-relaxed">
+                        {form.currency === 'NPR' 
+                          ? "This will track the Nepali Bikram Sambat day. (Baisakh 1, etc.)"
+                          : "This will track the standard English calendar day."
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 

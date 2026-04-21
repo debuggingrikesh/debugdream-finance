@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Bell, Plus, CheckCircle, Clock, Trash2 } from 'lucide-react'
 import { useReminders } from '../../hooks/useFirestore'
-import { formatNPR } from '../../utils/formatUtils'
+import { formatNPR, formatByCurrency } from '../../utils/formatUtils'
 import { todayString } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, Badge, EmptyState, ConfirmDialog } from '../../components/ui/index'
 import clsx from 'clsx'
@@ -66,7 +66,11 @@ export default function Reminders() {
                     </div>
                     <div>
                       <div className="font-body font-medium text-text-primary text-sm">{r.title}</div>
-                      {r.amount > 0 && <div className="font-mono text-accent text-sm mt-0.5">{formatNPR(r.amount)}</div>}
+                      {r.amount > 0 && (
+                        <div className="font-mono text-accent text-sm mt-0.5">
+                          {r.currency && r.currency !== 'NPR' ? formatByCurrency(r.amount, r.currency) : formatNPR(r.amount)}
+                        </div>
+                      )}
                       {r.dueDate && (
                         <div className={clsx('text-xs mt-0.5', overdue ? 'text-red-400' : 'text-text-muted')}>
                           {overdue ? '⚠ Overdue · ' : 'Due '}{r.dueDate}

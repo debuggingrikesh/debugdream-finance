@@ -9,7 +9,8 @@ import {
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useAllIncome, useAllExpenses, useReminders, useInvoices } from '../../hooks/useFirestore'
-import { formatNPR, formatCompact } from '../../utils/formatUtils'
+import { formatNPR, formatCompact, formatByCurrency } from '../../utils/formatUtils'
+import { useInvoiceReminders } from '../../hooks/useInvoiceReminders'
 import { getFiscalYearMonths, BS_MONTHS } from '../../utils/dateUtils'
 import { StatCard, Card, Badge, SectionHeader, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
@@ -33,6 +34,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function Dashboard() {
+  useInvoiceReminders()
   const { selectedMonth, currentFY, bankBalance, cashBalance } = useApp()
   const { data: allIncome,   loading: incomeLoading } = useAllIncome()
   const { data: allExpenses, loading: expLoading    } = useAllExpenses()
@@ -87,11 +89,11 @@ export default function Dashboard() {
 
       {/* ── Stat cards: 2 col → 3 col (sm) → 5 col (lg) ─────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
-        <StatCard label="Income"       value={formatNPR(totalIncome)}   icon={TrendingUp}                               loading={loading} />
-        <StatCard label="Expenses"     value={formatNPR(totalExpenses)} icon={TrendingDown}                             loading={loading} />
-        <StatCard label="Net Balance"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} />
-        <StatCard label="Bank Balance" value={formatNPR(bankBalance)}   icon={Landmark}                                loading={loading} />
-        <StatCard label="Cash in Hand" value={formatNPR(cashBalance)}   icon={Banknote}                                loading={loading} />
+        <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}                               loading={loading} />
+        <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                             loading={loading} />
+        <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} />
+        <StatCard label="Bank Balance (NPR)" value={formatNPR(bankBalance)}   icon={Landmark}                                loading={loading} />
+        <StatCard label="Cash in Hand (NPR)" value={formatNPR(cashBalance)}   icon={Banknote}                                loading={loading} />
       </div>
 
       {/* ── Charts: stacked on mobile, side-by-side on lg ────────────────── */}
@@ -188,8 +190,11 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className={clsx('font-mono text-sm shrink-0 ml-3', tx._type === 'income' ? 'text-green-400' : 'text-text-primary')}>
-                    {tx._type === 'income' ? '+' : '-'}{formatNPR(tx.amount)}
+                  <div className={clsx('font-mono text-sm shrink-0 ml-3 text-right', tx._type === 'income' ? 'text-green-400' : 'text-text-primary')}>
+                    <div>{tx._type === 'income' ? '+' : '-'}{formatNPR(tx.amount)}</div>
+                    {tx.originalCurrency && tx.originalCurrency !== 'NPR' && (
+                      <div className="text-[10px] text-text-muted">~ {tx.originalCurrency} {tx.originalAmount}</div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -217,7 +222,11 @@ export default function Dashboard() {
                 {upcomingReminders.map(r => (
                   <div key={r.id} className="p-2.5 bg-bg-elevated rounded-xl">
                     <div className="text-sm text-text-primary font-body">{r.title}</div>
-                    {r.amount > 0 && <div className="text-xs text-accent font-mono mt-0.5">{formatNPR(r.amount)}</div>}
+                    {r.amount > 0 && (
+                      <div className="text-xs text-accent font-mono mt-0.5">
+                        {r.currency && r.currency !== 'NPR' ? formatByCurrency(r.amount, r.currency) : formatNPR(r.amount)}
+                      </div>
+                    )}
                     {r.dueDate && <div className="text-xs text-text-muted mt-0.5">{r.dueDate}</div>}
                   </div>
                 ))}
@@ -248,7 +257,7 @@ export default function Dashboard() {
                         {inv.status}
                       </span>
                     </div>
-                    <div className="text-xs font-mono text-accent mt-0.5">{formatNPR(inv.total || 0)}</div>
+                    <div className="text-xs font-mono text-accent mt-0.5">{formatByCurrency(inv.total || 0, inv.currency)}</div>
                     <div className="text-xs text-text-muted">{inv.invoiceNumber}</div>
                   </div>
                 ))}

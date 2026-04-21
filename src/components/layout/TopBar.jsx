@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Bell, ChevronDown, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { formatNPR } from '../../utils/formatUtils'
 import { BS_MONTHS, AD_MONTHS } from '../../utils/dateUtils'
 import clsx from 'clsx'
 
 export default function TopBar() {
+  const navigate = useNavigate()
   const { today, selectedMonth, setSelectedMonth, currentFY, bankBalance, cashBalance, reminders } = useApp()
   const [showMonthPicker, setShowMonthPicker] = useState(false)
 
@@ -153,7 +155,10 @@ export default function TopBar() {
       </button>
 
       {/* Bell */}
-      <button className="relative w-8 h-8 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
+      <button 
+        onClick={() => navigate('/reminders')}
+        className="relative w-8 h-8 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
+      >
         <Bell size={15} />
         {activeAlerts > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-accent rounded-full text-white text-[9px] flex items-center justify-center font-bold">
