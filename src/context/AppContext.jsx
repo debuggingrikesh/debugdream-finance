@@ -146,8 +146,62 @@ export function AppProvider({ children, user }) {
 
   const toggleSidebar = useCallback(() => dispatch({ type: 'TOGGLE_SIDEBAR' }), [])
 
+  // ── Universal Database Sync ──────────────────────────────────────────────
+  const handleUniversalSync = useCallback(async () => {
+    const { getDocuments, batchWrite, COLLECTIONS } = await import('../firebase/firestore')
+    const { BS_MONTHS } = await import('../utils/dateUtils')
+    
+    try {
+      const ops = []
+      
+      // 1. Sync My Expenses
+      const months = await getDocuments(COLLECTIONS.MY_EXPENSE_MONTHS)
+      const entries = await getDocuments(COLLECTIONS.MY_EXPENSES)
+      
+      const monthGroups = months.reduce((acc, m) => {
+        const key = m.key || 'unknown'
+        if (!acc[key]) acc[key] = []
+        acc[key].push(m)
+        return acc
+      }, {})
+
+      Object.entries(monthGroups).forEach(([key, group]) => {
+        if (group.length > 1) {
+          const master = group[0]
+          const duplicates = group.slice(1)
+          duplicates.forEach(dup => {
+            ops.push({ type: 'delete', collectionName: COLLECTIONS.MY_EXPENSE_MONTHS, id: dup.id })
+            entries.filter(e => e.monthId === dup.id).forEach(entry => {
+              ops.push({ type: 'update', collectionName: COLLECTIONS.MY_EXPENSES, id: entry.id, data: { monthId: master.id } })
+            })
+          })
+        }
+      })
+
+      // Fix labels
+      months.forEach(m => {
+        if (m.key?.includes('-')) {
+          const [y, monthStr] = m.key.split('-')
+          const correctLabel = `${BS_MONTHS[parseInt(monthStr, 10) - 1]} ${y}`
+          if (m.monthLabel !== correctLabel) {
+            ops.push({ type: 'update', collectionName: COLLECTIONS.MY_EXPENSE_MONTHS, id: m.id, data: { monthLabel: correctLabel } })
+          }
+        }
+      })
+
+      if (ops.length > 0) {
+        await batchWrite(ops)
+        return { success: true, count: ops.length }
+      }
+      return { success: true, count: 0 }
+    } catch (err) {
+      console.error('Sync failed:', err)
+      return { success: false, error: err.message }
+    }
+  }, [])
+
   return (
-    <AppContext.Provider value={{ ...state, dispatch, updateSettings, setSelectedMonth, toggleSidebar }}>
+    <AppContext.Provider value={{ ...state, dispatch, updateSettings, setSelectedMonth, toggleSidebar, handleUniversalSync }}>
       {children}
     </AppContext.Provider>
   )

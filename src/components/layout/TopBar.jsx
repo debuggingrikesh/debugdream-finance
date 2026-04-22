@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'
+import { Bell, ChevronDown, ChevronLeft, ChevronRight, Sun, Moon, History } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { formatNPR } from '../../utils/formatUtils'
@@ -8,7 +8,10 @@ import clsx from 'clsx'
 
 export default function TopBar() {
   const navigate = useNavigate()
-  const { today, selectedMonth, setSelectedMonth, currentFY, bankBalance, cashBalance, reminders } = useApp()
+  const { 
+    today, selectedMonth, setSelectedMonth, currentFY, 
+    bankBalance, cashBalance, reminders, handleUniversalSync 
+  } = useApp()
   const [showMonthPicker, setShowMonthPicker] = useState(false)
 
   // ── Dark / Light mode ────────────────────────────────────────────────────
@@ -165,6 +168,22 @@ export default function TopBar() {
             {activeAlerts > 9 ? '9+' : activeAlerts}
           </span>
         )}
+      </button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Universal Sync */}
+      <button
+        onClick={async () => {
+          if (!confirm('Run project-wide database reconciliation?')) return
+          const res = await handleUniversalSync()
+          if (res.success) alert(res.count > 0 ? `Sync complete! Fixed ${res.count} issues.` : 'Database is healthy.')
+          else alert('Sync failed: ' + res.error)
+        }}
+        title="Universal Database Sync"
+        className="w-8 h-8 rounded-lg bg-accent/10 hover:bg-accent/20 flex items-center justify-center text-accent transition-all group"
+      >
+        <History size={15} className="group-hover:rotate-180 transition-transform duration-500" />
       </button>
     </header>
   )

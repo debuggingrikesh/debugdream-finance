@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   addDocument, updateDocument, deleteDocument, subscribeToCollection,
 } from '../firebase/firestore'
+import { adToBS } from '../utils/dateUtils'
 
 // ── Generic collection hook ───────────────────────────────────────────────────
 export function useCollection(collectionName, enabled = true) {
@@ -106,10 +107,25 @@ export function useMyExpenses() {
 
   useEffect(() => {
     const unsubMonths = subscribeToCollection('myExpenseMonths', (docs) => {
-      const sorted = [...docs].sort((a, b) => (b.key || '').localeCompare(a.key || ''))
+      const sorted = [...docs].sort((a, b) => {
+        const keyCmp = (b.key || '').localeCompare(a.key || '')
+        if (keyCmp !== 0) return keyCmp
+        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+      })
+
+      const today = new Date()
+      const bs = adToBS(today)
+      if (!bs) return // Defensive
+
+      const nowKey = `${bs.year}-${String(bs.month).padStart(2, '0')}`
+      
       setMonths(sorted)
-      setCurrentMonth(sorted.find(d => d.status === 'open') || null)
+      // The currentMonth MUST be the one matching TODAY'S calendar month
+      // This is the primary bucket we are currently spending in.
+      const calMonth = sorted.find(d => d.key === nowKey && d.status === 'open')
+      setCurrentMonth(calMonth || null)
     })
+    
     const unsubEntries = subscribeToCollection('myExpenses', (docs) => {
       const sorted = [...docs].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
       setEntries(sorted)
@@ -144,4 +160,3 @@ export function useCarLoan() {
 
   return { setup, payments, totalPaid, outstanding, loading }
 }
-
