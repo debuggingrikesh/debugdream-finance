@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Plus, Lock, History, Wallet, CheckCircle, Trash2 } from 'lucide-react'
+import { Plus, Lock, History, Wallet, CheckCircle, Trash2, Edit2 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useMyExpenses } from '../../hooks/useFirestore'
-import { addDocument, updateDocument } from '../../firebase/firestore'
+import { addDocument, updateDocument, deleteDocument, batchWrite } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { adToBS, BS_MONTHS, todayString, getTodayBoth, formatAD } from '../../utils/dateUtils'
 import { Card, SectionHeader, Button, Modal, Input, Select, Badge, Table, EmptyState } from '../../components/ui/index'
@@ -16,6 +16,7 @@ export default function MyExpenses() {
   const [showAdd, setShowAdd] = useState(false)
   const [showClose, setShowClose] = useState(false)
   const [selectedHistory, setSelectedHistory] = useState(null)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [form, setForm] = useState({ date: todayString(), category: 'Food', amount: '', note: '' })
   const [reimbursementSource, setReimbursementSource] = useState('cash')
   const [saving, setSaving] = useState(false)
@@ -25,17 +26,34 @@ export default function MyExpenses() {
   const { bs: todayBS } = getTodayBoth()
   const currentMonthKey = `${todayBS.year}-${String(todayBS.month).padStart(2, '0')}`
 
-  // Active month entries
-  const activeEntries = useMemo(() =>
-    entries.filter(e => e.monthKey === currentMonth?.key),
-    [entries, currentMonth]
-  )
+  // Active month entries - Show ALL entries linked to any OPEN month record
+  const activeEntries = useMemo(() => {
+    const openMonths = months.filter(m => m.status === 'open')
+    const openIds = openMonths.map(m => m.id)
+    const openKeys = openMonths.map(m => m.key)
+
+    return entries.filter(e => {
+      // 1. If tied to an open month ID, show it
+      if (e.monthId && openIds.includes(e.monthId)) return true
+      
+      // 2. If legacy (no ID), show if key matches any open month
+      if (!e.monthId && openKeys.includes(e.monthKey)) return true
+      
+      return false
+    })
+  }, [entries, months])
 
   const activeTotal = activeEntries.reduce((s, e) => s + (e.amount || 0), 0)
 
   // History month entries
   const historyEntries = useMemo(() =>
-    entries.filter(e => e.monthKey === selectedHistory?.key),
+    entries.filter(e => {
+      if (!selectedHistory) return false
+      // If entry has an ID, it MUST match the selected history month ID
+      if (e.monthId) return e.monthId === selectedHistory.id
+      // For legacy entries (no ID), fallback to monthKey matching
+      return e.monthKey === selectedHistory.key
+    }),
     [entries, selectedHistory]
   )
 
@@ -44,71 +62,140 @@ export default function MyExpenses() {
   }
 
   // ── Ensure active month exists ────────────────────────────────────────────
-  const ensureActiveMonth = async () => {
-    if (!currentMonth) {
-      await addDocument('myExpenseMonths', {
-        key: currentMonthKey,
-        bsYear: todayBS.year,
-        bsMonth: todayBS.month,
-        monthLabel: `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`,
-        status: 'open',
-        total: 0,
-      })
-    }
+  const ensureActiveMonth = async (targetKey, bsInfo) => {
+    // Look for an existing open month with this key first
+    const existing = months.find(m => m.key === targetKey && m.status === 'open')
+    if (existing) return existing.id
+
+    // Otherwise create a new one for that specific month
+    return await addDocument('myExpenseMonths', {
+      key: targetKey,
+      bsYear: bsInfo?.year || todayBS.year,
+      bsMonth: bsInfo?.month || todayBS.month,
+      monthLabel: `${BS_MONTHS[(bsInfo?.month || todayBS.month) - 1]} ${bsInfo?.year || todayBS.year}`,
+      status: 'open',
+      total: 0,
+    })
   }
 
-  // ── Add entry ─────────────────────────────────────────────────────────────
-  const handleAdd = async () => {
+  // ── Add/Update entry ──────────────────────────────────────────────────────
+  const handleSave = async () => {
     if (!form.amount || !form.date) return
     setSaving(true)
-    await ensureActiveMonth()
-    const bs = bsFromDate(form.date)
     try {
-      await addDocument('myExpenses', {
+      const bs = bsFromDate(form.date)
+      const data = {
         ...form,
         amount: parseFloat(form.amount) || 0,
-        monthKey: currentMonthKey,
         bsYear: bs?.year,
         bsMonth: bs?.month,
         bsDay: bs?.day,
-      })
+      }
+
+      if (editingEntry) {
+        await updateDocument('myExpenses', editingEntry.id, data)
+      } else {
+        // Link to the month based on the EXPENSE DATE, not today's date
+        const entryMonthKey = bs ? `${bs.year}-${String(bs.month).padStart(2, '0')}` : currentMonthKey
+        const monthId = await ensureActiveMonth(entryMonthKey, bs)
+        
+        await addDocument('myExpenses', {
+          ...data,
+          monthKey: entryMonthKey,
+          monthId,
+        })
+      }
+      
       setShowAdd(false)
+      setEditingEntry(null)
       setForm({ date: todayString(), category: 'Food', amount: '', note: '' })
     } finally {
       setSaving(false)
     }
   }
 
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this entry?')) return
+    try {
+      await deleteDocument('myExpenses', id)
+    } catch (err) { console.error(err) }
+  }
+
+  const openEdit = (entry) => {
+    setEditingEntry(entry)
+    setForm({ date: entry.date, category: entry.category, amount: entry.amount, note: entry.note })
+    setShowAdd(true)
+  }
+
   // ── Close and reimburse ───────────────────────────────────────────────────
   const handleClose = async () => {
-    if (!currentMonth) return
+    // If we have open months, we prioritize the oldest one to close first
+    const monthToClose = months.find(m => m.status === 'open')
+    if (!monthToClose) return
+
     setSaving(true)
     const bs = bsFromDate(todayString())
     try {
-      // Create reimbursement expense in company expenses
-      await addDocument('expenses', {
-        date: todayString(),
-        category: 'Personal Reimbursement – Rikesh',
-        description: `Personal expense reimbursement — ${currentMonth.monthLabel}`,
-        amount: activeTotal,
-        paymentSource: reimbursementSource,
-        bsYear: bs?.year,
-        bsMonth: bs?.month,
-        bsDay: bs?.day,
-        bsMonthName: bs?.monthName,
-        type: 'expense',
-        notes: `Reimburses ${activeEntries.length} entries from ${currentMonth.monthLabel}`,
+      const ops = []
+
+      // Calculate the REAL total for the specific month we are closing
+      // (This prevents using the Baisakh total for a Chaitra closure)
+      const entriesToSeal = entries.filter(e => e.monthKey === monthToClose.key)
+      const totalToReimburse = entriesToSeal.reduce((s, e) => s + (e.amount || 0), 0)
+
+      // 1. Create reimbursement expense in company expenses
+      ops.push({
+        type: 'set',
+        collectionName: 'expenses',
+        data: {
+          date: todayString(),
+          category: 'Personal Reimbursement – Rikesh',
+          description: `Personal expense reimbursement — ${monthToClose.monthLabel}`,
+          amount: totalToReimburse,
+          paymentSource: reimbursementSource,
+          bsYear: bs?.year,
+          bsMonth: bs?.month,
+          bsDay: bs?.day,
+          bsMonthName: bs?.monthName,
+          type: 'expense',
+          notes: `Reimburses ${entriesToSeal.length} entries from ${monthToClose.monthLabel}`,
+          myExpenseMonthId: monthToClose.id, // Reference for tracking
+        }
       })
 
-      // Lock the month
-      await updateDocument('myExpenseMonths', currentMonth.id, {
-        status: 'closed',
-        total: activeTotal,
-        reimbursedDate: todayString(),
-        reimbursementSource,
+      // 2. Identify all open month records for this specific month key and close them
+      const relatedOpenMonths = months.filter(m => m.key === monthToClose.key && m.status === 'open')
+      relatedOpenMonths.forEach(m => {
+        ops.push({
+          type: 'update',
+          collectionName: 'myExpenseMonths',
+          id: m.id,
+          data: {
+            status: 'closed',
+            total: m.id === monthToClose.id ? totalToReimburse : 0,
+            reimbursedDate: todayString(),
+            reimbursementSource,
+          }
+        })
       })
+
+      // 3. Nuclear Seal: Force all entries matching this monthKey to have the master monthId.
+      // This is what prevents them from 're-appearing' later.
+      entriesToSeal.forEach(entry => {
+        // Even if they already have an ID, we update it to the master ID to be safe
+        ops.push({
+          type: 'update',
+          collectionName: 'myExpenses',
+          id: entry.id,
+          data: { monthId: monthToClose.id }
+        })
+      })
+
+      await batchWrite(ops)
 
       setShowClose(false)
+      setActiveTab('history')
+      setSelectedHistory({ ...monthToClose, status: 'closed', total: totalToReimburse })
     } finally {
       setSaving(false)
     }
@@ -144,6 +231,28 @@ export default function MyExpenses() {
     { header: 'Category', render: (row) => <Badge>{row.category}</Badge> },
     { header: 'Note', render: (row) => <span className="text-text-secondary text-sm">{row.note || '—'}</span> },
     { header: 'Amount', align: 'right', render: (row) => <span className="font-mono text-text-primary text-sm">{formatNPR(row.amount)}</span> },
+    {
+      header: '',
+      align: 'right',
+      render: (row) => (
+        <div className="flex items-center justify-end gap-1">
+          <button 
+            onClick={() => openEdit(row)} 
+            className="p-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+            title="Edit"
+          >
+            <Edit2 size={14} />
+          </button>
+          <button 
+            onClick={() => handleDelete(row.id)} 
+            className="p-1.5 rounded-lg text-text-muted hover:text-status-error hover:bg-status-error/10 transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )
+    },
   ]
 
   return (
@@ -173,7 +282,8 @@ export default function MyExpenses() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">
-                  {formatMonthKey(currentMonth?.monthLabel, currentMonth?.key) || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
+                  {/* Show the label of the specific month we are currently seeing in the list */}
+                  {(months.find(m => m.status === 'open')?.monthLabel) || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
                 </div>
                 <div className="font-mono text-text-primary text-3xl font-bold">{formatNPR(activeTotal)}</div>
                 <div className="text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
@@ -197,7 +307,7 @@ export default function MyExpenses() {
                 icon={Wallet}
                 title="No expenses yet"
                 description="Track personal expenses you pay on behalf of the company. You'll reimburse yourself at month end."
-                action={<Button onClick={() => setShowAdd(true)} icon={Plus}>Add First Entry</Button>}
+                action={<Button onClick={() => { setEditingEntry(null); setShowAdd(true); }} icon={Plus}>Add First Entry</Button>}
               />
             ) : (
               <Table columns={activeColumns} data={activeEntries} />
@@ -264,13 +374,15 @@ export default function MyExpenses() {
       {/* Add expense modal */}
       <Modal
         isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
-        title="Add Personal Expense"
+        onClose={() => { setShowAdd(false); setEditingEntry(null); }}
+        title={editingEntry ? "Edit Expense" : "Add Personal Expense"}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={handleAdd} loading={saving} disabled={!form.amount}>Save</Button>
+            <Button variant="ghost" onClick={() => { setShowAdd(false); setEditingEntry(null); }}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving} disabled={!form.amount}>
+              {editingEntry ? "Update" : "Save"}
+            </Button>
           </>
         }
       >
