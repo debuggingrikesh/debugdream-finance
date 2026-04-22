@@ -194,12 +194,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer })
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div className={clsx(
         'relative w-full bg-bg-surface border border-border shadow-[0_25px_50px_rgba(0,0,0,0.8)]',
-        'flex flex-col max-h-[92vh]',
+        'flex flex-col max-h-[95vh] sm:max-h-[92vh]',
         // On mobile: bottom sheet style; on sm+: centered rounded card
-        'rounded-t-2xl sm:rounded-2xl',
+        'rounded-t-3xl sm:rounded-2xl',
         sizes[size]
       )}>
-        <div className="flex items-center justify-between p-4 md:p-5 border-b border-border shrink-0">
+        {/* Mobile handle indicator */}
+        <div className="sm:hidden flex justify-center py-2 shrink-0">
+          <div className="w-10 h-1.5 bg-border rounded-full" />
+        </div>
+        <div className="flex items-center justify-between px-4 pb-4 md:p-5 border-b border-border shrink-0">
           <h2 className="font-display font-bold text-base md:text-lg text-text-primary">{title}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-lg bg-bg-elevated hover:bg-bg-hover flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors">
             <X size={16} />
@@ -207,7 +211,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer })
         </div>
         <div className="flex-1 overflow-y-auto p-4 md:p-5">{children}</div>
         {footer && (
-          <div className="p-4 md:p-5 border-t border-border shrink-0 flex items-center justify-end gap-3">
+          <div className="p-4 md:p-5 border-t border-border shrink-0 flex items-center justify-end gap-3 pb-8 sm:pb-5">
             {footer}
           </div>
         )}
@@ -290,12 +294,12 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', loa
   }
   return (
     // negative margin bleeds to card edge on mobile so scrollbar aligns with content
-    <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5">
-      <table className="w-full" style={{ minWidth }}>
+    <div className="overflow-x-auto -mx-4 px-4 sm:-mx-5 sm:px-5 scrollbar-thin">
+      <table className="w-full border-collapse" style={{ minWidth }}>
         <thead>
           <tr className="border-b border-border">
             {columns.map((col, i) => (
-              <th key={i} className="pb-3 text-left text-xs text-text-muted font-body font-medium uppercase tracking-wider" style={{ textAlign: col.align || 'left' }}>
+              <th key={i} className="pb-3 text-left text-[10px] sm:text-xs text-text-muted font-body font-medium uppercase tracking-wider whitespace-nowrap" style={{ textAlign: col.align || 'left' }}>
                 {col.header}
               </th>
             ))}
@@ -309,7 +313,7 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', loa
               className={clsx('transition-colors duration-100', onRowClick && 'cursor-pointer hover:bg-bg-elevated')}
             >
               {columns.map((col, ci) => (
-                <td key={ci} className="py-3 text-sm font-body text-text-secondary" style={{ textAlign: col.align || 'left' }}>
+                <td key={ci} className="py-3.5 text-sm font-body text-text-secondary" style={{ textAlign: col.align || 'left' }}>
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}
@@ -324,12 +328,12 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', loa
 // ─── Section Header ───────────────────────────────────────────────────────────
 export function SectionHeader({ title, subtitle, action }) {
   return (
-    <div className="flex items-start justify-between mb-5 md:mb-6">
-      <div className="min-w-0 mr-3">
-        <h1 className="font-display font-bold text-xl md:text-2xl text-text-primary">{title}</h1>
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 md:mb-6">
+      <div className="min-w-0">
+        <h1 className="font-display font-bold text-xl md:text-2xl text-text-primary truncate">{title}</h1>
         {subtitle && <p className="text-xs md:text-sm text-text-muted font-body mt-0.5">{subtitle}</p>}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">{action}</div>}
     </div>
   )
 }

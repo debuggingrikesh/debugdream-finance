@@ -273,49 +273,51 @@ export default function Invoices() {
           filtered.map(inv => {
             const { color } = STATUS_CONFIG[inv.status] || STATUS_CONFIG.Draft
             return (
-              <Card key={inv.id} className="p-3 md:p-4" hover>
-                <div className="flex items-center justify-between gap-3">
+              <Card key={inv.id} className="p-3 sm:p-4" hover>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-bg-elevated flex items-center justify-center shrink-0">
-                      <FileText size={15} className="text-text-muted" />
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-bg-elevated flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-text-muted" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-display font-bold text-text-primary text-sm">{inv.invoiceNumber}</span>
+                        <span className="font-display font-bold text-text-primary text-xs sm:text-sm">{inv.invoiceNumber}</span>
                         <Badge variant={color}>{inv.status}</Badge>
                       </div>
-                      <div className="text-xs text-text-muted font-body mt-0.5">
+                      <div className="text-[10px] sm:text-xs text-text-muted font-body mt-0.5 truncate">
                         {inv.clientName} · {inv.invoiceDate}{inv.dueDate ? ` · Due ${inv.dueDate}` : ''}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <div className="font-mono text-text-primary font-bold text-sm md:text-base">
-                      {formatByCurrency(inv.total, inv.currency)}
+                  <div className="flex items-center justify-between sm:justify-end gap-4">
+                    <div className="text-left sm:text-right shrink-0">
+                      <div className="font-mono text-text-primary font-bold text-sm sm:text-base">
+                        {formatByCurrency(inv.total, inv.currency)}
+                      </div>
+                      <div className="text-[10px] text-text-muted">{inv.currency}</div>
                     </div>
-                    <div className="text-xs text-text-muted">{inv.currency}</div>
-                  </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    {inv.status === 'Draft' && (
-                      <Button variant="secondary" size="xs" icon={Send} onClick={() => markSent(inv)}>Send</Button>
-                    )}
-                    {inv.status === 'Sent' && (
-                      <Button variant="success" size="xs" icon={CheckCircle} onClick={() => handleMarkPaid(inv)}>Paid</Button>
-                    )}
-                    <button onClick={() => handlePreview(inv)} title="Preview" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-accent transition-colors">
-                      <Eye size={13} />
-                    </button>
-                    <button onClick={() => handlePDF(inv)} title="Download" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
-                      <Download size={13} />
-                    </button>
-                    <button onClick={() => openEdit(inv)} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
-                      <Pencil size={13} />
-                    </button>
-                    <button onClick={() => setDeleteId(inv.id)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {inv.status === 'Draft' && (
+                        <Button variant="secondary" size="xs" icon={Send} onClick={() => markSent(inv)}>Send</Button>
+                      )}
+                      {inv.status === 'Sent' && (
+                        <Button variant="success" size="xs" icon={CheckCircle} onClick={() => handleMarkPaid(inv)}>Paid</Button>
+                      )}
+                      <button onClick={() => handlePreview(inv)} title="Preview" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-accent transition-colors">
+                        <Eye size={12} />
+                      </button>
+                      <button onClick={() => handlePDF(inv)} title="Download" className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
+                        <Download size={12} />
+                      </button>
+                      <button onClick={() => openEdit(inv)} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
+                        <Pencil size={12} />
+                      </button>
+                      <button onClick={() => setDeleteId(inv.id)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>

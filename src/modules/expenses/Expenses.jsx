@@ -221,36 +221,36 @@ export default function Expenses() {
       />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Total Expenses</div>
-          <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(totalExpenses)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Expenses</div>
+          <div className="font-mono text-text-primary text-lg sm:text-xl font-bold">{formatNPR(totalExpenses)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
-          <div className="font-mono text-blue-400 text-xl font-bold">{formatNPR(totalBank)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
+          <div className="font-mono text-blue-400 text-lg sm:text-xl font-bold">{formatNPR(totalBank)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
-          <div className="font-mono text-yellow-400 text-xl font-bold">{formatNPR(totalCash)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
+          <div className="font-mono text-yellow-400 text-lg sm:text-xl font-bold">{formatNPR(totalCash)}</div>
         </Card>
       </div>
 
       {/* Category breakdown */}
       {catSummary.length > 0 && (
-        <Card className="p-5">
-          <h3 className="font-display font-bold text-text-primary text-sm mb-4">Category Breakdown · {monthLabel}</h3>
-          <div className="space-y-2">
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm mb-4">Category Breakdown · {monthLabel}</h3>
+          <div className="space-y-3 sm:space-y-2">
             {catSummary.map(([cat, amount]) => (
-              <div key={cat} className="flex items-center gap-3">
-                <span className="text-sm font-body text-text-secondary w-40 truncate shrink-0">{cat}</span>
+              <div key={cat} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <span className="text-xs sm:text-sm font-body text-text-secondary w-full sm:w-40 truncate shrink-0">{cat}</span>
                 <div className="flex-1 h-1.5 bg-bg-elevated rounded-full overflow-hidden">
                   <div
                     className="h-full bg-accent rounded-full transition-all"
                     style={{ width: `${totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0}%` }}
                   />
                 </div>
-                <span className="font-mono text-text-primary text-sm w-28 text-right shrink-0">{formatNPR(amount)}</span>
+                <span className="font-mono text-text-primary text-xs sm:text-sm w-full sm:w-28 text-left sm:text-right shrink-0">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>

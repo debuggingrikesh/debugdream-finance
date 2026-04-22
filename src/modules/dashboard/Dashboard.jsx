@@ -87,8 +87,8 @@ export default function Dashboard() {
     <div className="space-y-4 md:space-y-6 animate-fade-in">
       <SectionHeader title="Dashboard" subtitle={`${monthLabel} · ${currentFY.label}`} />
 
-      {/* ── Stat cards: 2 col → 3 col (sm) → 5 col (lg) ─────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
+      {/* ── Stat cards: 1 col → 2 col (sm) → 3 col (md) → 5 col (lg) ─────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}                               loading={loading} />
         <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                             loading={loading} />
         <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} />
@@ -113,15 +113,17 @@ export default function Dashboard() {
           {loading ? (
             <div className="h-44 bg-bg-elevated rounded-xl animate-pulse" />
           ) : (
-            <ResponsiveContainer width="100%" height={190}>
-              <BarChart data={fyChartData} barGap={2}>
-                <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={44} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="income"   fill="var(--color-accent)" radius={[4,4,0,0]} maxBarSize={18} />
-                <Bar dataKey="expenses" fill="var(--color-border)" radius={[4,4,0,0]} maxBarSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] md:h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fyChartData} barGap={2} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={40} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+                  <Bar dataKey="income"   fill="var(--color-accent)" radius={[4,4,0,0]} maxBarSize={18} />
+                  <Bar dataKey="expenses" fill="var(--color-border)" radius={[4,4,0,0]} maxBarSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </Card>
 

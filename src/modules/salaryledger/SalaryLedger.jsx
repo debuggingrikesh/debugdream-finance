@@ -247,22 +247,22 @@ export default function SalaryLedger() {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4 border-l-4 border-l-blue-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Agreed</div>
-          <div className="font-mono text-text-primary text-lg font-bold">{formatNPR(totalAccrued)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">{formatNPR(totalAccrued)}</div>
         </Card>
         <Card className="p-4 border-l-4 border-l-red-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Loan/EMI</div>
-          <div className="font-mono text-text-primary text-lg font-bold">-{formatNPR(totalEMIDeducted)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">-{formatNPR(totalEMIDeducted)}</div>
         </Card>
         <Card className="p-4 border-l-4 border-l-green-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Taken</div>
-          <div className="font-mono text-text-primary text-lg font-bold">{formatNPR(totalPaid)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">{formatNPR(totalPaid)}</div>
         </Card>
         <Card className="p-4 bg-accent/5 border-l-4 border-l-accent shadow-lg shadow-accent/5">
           <div className="text-[10px] text-accent font-body uppercase tracking-wider mb-1 font-bold">Net Balance Owed</div>
-          <div className="font-mono text-accent text-2xl font-black">{formatNPR(netBalance)}</div>
+          <div className="font-mono text-accent text-lg sm:text-2xl font-black">{formatNPR(netBalance)}</div>
           <div className="text-[10px] text-accent/60 mt-1">Amount company owes you</div>
         </Card>
       </div>
@@ -278,11 +278,11 @@ export default function SalaryLedger() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-body">
+          <div className="overflow-x-auto -mx-5 px-5 scrollbar-thin">
+            <table className="w-full text-sm font-body min-w-[700px]">
               <thead className="bg-bg-elevated/50">
                 <tr>
-                  <th className="py-4 px-5 text-left text-xs text-text-muted uppercase tracking-wider font-bold">
+                  <th className="py-4 px-5 text-left text-[10px] text-text-muted uppercase tracking-wider font-bold">
                     <button
                       onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
                       className="flex items-center gap-1.5 hover:text-text-primary transition-colors group"
@@ -294,12 +294,12 @@ export default function SalaryLedger() {
                       </span>
                     </button>
                   </th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Basis</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Loan/EMI</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Net Salary</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Taken</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold bg-bg-surface/50 border-x border-border/10 ring-1 ring-accent/10">Remain</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Status</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Basis</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Loan/EMI</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Net Salary</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Taken</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold bg-bg-surface/50 border-x border-border/10 ring-1 ring-accent/10">Remain</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Status</th>
                   <th className="py-4 px-5"></th>
                 </tr>
               </thead>
