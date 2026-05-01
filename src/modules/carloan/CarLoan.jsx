@@ -192,14 +192,14 @@ export default function CarLoan() {
         <>
           {/* ── Loan overview card ─────────────────────────────────────────── */}
           <Card className="p-5 md:p-6">
-            <div className="flex items-start justify-between mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
               <div>
-                <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Lender</div>
-                <div className="font-display font-bold text-text-primary text-xl">{setup.lender || 'Loan'}</div>
+                <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Lender</div>
+                <div className="font-display font-bold text-text-primary text-lg sm:text-xl">{setup.lender || 'Loan'}</div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Monthly EMI</div>
-                <div className="font-mono text-accent text-2xl font-bold">{formatNPR(setup.emiAmount)}</div>
+              <div className="sm:text-right">
+                <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Monthly EMI</div>
+                <div className="font-mono text-accent text-xl sm:text-2xl font-bold">{formatNPR(setup.emiAmount)}</div>
               </div>
             </div>
 
@@ -211,20 +211,20 @@ export default function CarLoan() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-border">
               <div>
-                <div className="text-xs text-text-muted mb-0.5">Total Loan</div>
-                <div className="font-mono text-text-primary font-bold">{formatNPR(setup.totalAmount)}</div>
+                <div className="text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">Total Loan</div>
+                <div className="font-mono text-text-primary text-sm font-bold">{formatNPR(setup.totalAmount)}</div>
               </div>
               <div>
-                <div className="text-xs text-text-muted mb-0.5">EMIs Done</div>
-                <div className="font-mono text-text-primary font-bold">{emisCompleted} / {totalEMIs || '?'}</div>
+                <div className="text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">EMIs Done</div>
+                <div className="font-mono text-text-primary text-sm font-bold">{emisCompleted} / {totalEMIs || '?'}</div>
               </div>
               <div>
-                <div className="text-xs text-text-muted mb-0.5">Outstanding</div>
-                <div className="font-mono text-accent font-bold">{formatNPR(outstanding)}</div>
+                <div className="text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">Outstanding</div>
+                <div className="font-mono text-accent text-sm font-bold">{formatNPR(outstanding)}</div>
               </div>
               <div>
-                <div className="text-xs text-text-muted mb-0.5">Payoff Est.</div>
-                <div className="font-mono text-text-primary font-bold">{estimatedPayoff}</div>
+                <div className="text-[10px] text-text-muted mb-0.5 uppercase tracking-wider">Payoff Est.</div>
+                <div className="font-mono text-text-primary text-sm font-bold">{estimatedPayoff}</div>
               </div>
             </div>
           </Card>

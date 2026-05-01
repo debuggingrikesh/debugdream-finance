@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Plus, Download, ArrowDownRight, Trash2, Banknote } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useAllExpenses } from '../../hooks/useFirestore'
-import { addDocument, deleteDocument, updateDocument } from '../../firebase/firestore'
+import { addDocument, deleteDocument, updateDocument, getDocuments, where } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { adToBS, BS_MONTHS, todayString } from '../../utils/dateUtils'
 import {
@@ -85,17 +85,47 @@ export default function Expenses() {
         bsMonthName: bs?.monthName,
         type: 'expense',
       }
-      await addDocument('expenses', docData)
+      const expenseId = await addDocument('expenses', docData)
 
       // Auto-update car loan tracker
       if (form.category === 'Car Loan EMI') {
+        const emiAmount = parseFloat(form.amount) || 0
         await addDocument('carLoanPayments', {
           date: form.date,
-          amount: parseFloat(form.amount) || 0,
+          amount: emiAmount,
           notes: form.notes,
           bsYear: bs?.year,
           bsMonth: bs?.month,
+          linkedExpenseId: expenseId,
         })
+
+        // ── Auto-Sync to Salary Ledger ──────────────────────────────────────
+        // Find or create a ledger entry for this BS month
+        if (bs) {
+          const monthKey = `${bs.year}-${String(bs.month).padStart(2, '0')}`
+          
+          const existing = await getDocuments('salaryLedger', [where('monthKey', '==', monthKey)])
+          
+          if (existing.length > 0) {
+            // Update existing entry with the EMI amount
+            await updateDocument('salaryLedger', existing[0].id, {
+              carLoanEMI: emiAmount,
+              linkedExpenseId: expenseId,
+            })
+          } else {
+            // Create a new month entry for Rikesh with the EMI deduction
+            await addDocument('salaryLedger', {
+              monthLabel: `${bs.monthName} ${bs.year}`,
+              monthKey: monthKey,
+              grossAccrued: 150000, // Standard agreed salary
+              carLoanEMI: emiAmount,
+              totalPaid: 0,
+              status: 'unpaid',
+              linkedExpenseId: expenseId,
+              isAutoCreated: true,
+            })
+          }
+        }
       }
 
       setShowAdd(false)
@@ -132,6 +162,26 @@ export default function Expenses() {
 
   const handleDelete = async () => {
     if (!deleteId) return
+    
+    // Check if this was a Car Loan EMI expense
+    const expense = filtered.find(e => e.id === deleteId)
+    if (expense?.category === 'Car Loan EMI') {
+      const linked = await getDocuments('salaryLedger', [where('linkedExpenseId', '==', deleteId)])
+      for (const entry of linked) {
+        // Clear the EMI if it was synced from this expense
+        await updateDocument('salaryLedger', entry.id, { 
+          carLoanEMI: 0, 
+          linkedExpenseId: null 
+        })
+      }
+      
+      // Also clear from car loan payments
+      const carPayments = await getDocuments('carLoanPayments', [where('linkedExpenseId', '==', deleteId)])
+      for (const p of carPayments) {
+        await deleteDocument('carLoanPayments', p.id)
+      }
+    }
+
     await deleteDocument('expenses', deleteId)
     setDeleteId(null)
   }
@@ -221,36 +271,36 @@ export default function Expenses() {
       />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Total Expenses</div>
-          <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(totalExpenses)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Expenses</div>
+          <div className="font-mono text-text-primary text-lg sm:text-xl font-bold">{formatNPR(totalExpenses)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
-          <div className="font-mono text-blue-400 text-xl font-bold">{formatNPR(totalBank)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Bank</div>
+          <div className="font-mono text-blue-400 text-lg sm:text-xl font-bold">{formatNPR(totalBank)}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
-          <div className="font-mono text-yellow-400 text-xl font-bold">{formatNPR(totalCash)}</div>
+          <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Cash</div>
+          <div className="font-mono text-yellow-400 text-lg sm:text-xl font-bold">{formatNPR(totalCash)}</div>
         </Card>
       </div>
 
       {/* Category breakdown */}
       {catSummary.length > 0 && (
-        <Card className="p-5">
-          <h3 className="font-display font-bold text-text-primary text-sm mb-4">Category Breakdown · {monthLabel}</h3>
-          <div className="space-y-2">
+        <Card className="p-4 sm:p-5">
+          <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm mb-4">Category Breakdown · {monthLabel}</h3>
+          <div className="space-y-3 sm:space-y-2">
             {catSummary.map(([cat, amount]) => (
-              <div key={cat} className="flex items-center gap-3">
-                <span className="text-sm font-body text-text-secondary w-40 truncate shrink-0">{cat}</span>
+              <div key={cat} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <span className="text-xs sm:text-sm font-body text-text-secondary w-full sm:w-40 truncate shrink-0">{cat}</span>
                 <div className="flex-1 h-1.5 bg-bg-elevated rounded-full overflow-hidden">
                   <div
                     className="h-full bg-accent rounded-full transition-all"
                     style={{ width: `${totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0}%` }}
                   />
                 </div>
-                <span className="font-mono text-text-primary text-sm w-28 text-right shrink-0">{formatNPR(amount)}</span>
+                <span className="font-mono text-text-primary text-xs sm:text-sm w-full sm:w-28 text-left sm:text-right shrink-0">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>

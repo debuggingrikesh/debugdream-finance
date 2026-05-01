@@ -199,6 +199,10 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer })
         'rounded-t-[2.5rem] sm:rounded-[2rem]',
         sizes[size]
       )}>
+        {/* Mobile handle indicator */}
+        <div className="sm:hidden flex justify-center py-2 shrink-0">
+          <div className="w-10 h-1.5 bg-white/10 rounded-full" />
+        </div>
         <div className="flex items-center justify-between p-6 md:px-8 border-b border-white/5 shrink-0">
           <div>
             <h2 className="font-display font-bold text-lg md:text-xl text-text-primary tracking-tight">{title}</h2>
@@ -209,7 +213,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer })
         </div>
         <div className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-none">{children}</div>
         {footer && (
-          <div className="p-5 md:px-8 border-t border-white/5 shrink-0 flex items-center justify-end gap-3 bg-white/[0.02]">
+          <div className="p-5 md:px-8 border-t border-white/5 shrink-0 flex items-center justify-end gap-3 bg-white/[0.02] pb-8 sm:pb-5">
             {footer}
           </div>
         )}
@@ -326,12 +330,12 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', loa
 // ─── Section Header ───────────────────────────────────────────────────────────
 export function SectionHeader({ title, subtitle, action }) {
   return (
-    <div className="flex items-start justify-between mb-5 md:mb-6">
-      <div className="min-w-0 mr-3">
-        <h1 className="font-display font-bold text-xl md:text-2xl text-text-primary">{title}</h1>
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 md:mb-6">
+      <div className="min-w-0">
+        <h1 className="font-display font-bold text-xl md:text-2xl text-text-primary truncate">{title}</h1>
         {subtitle && <p className="text-xs md:text-sm text-text-muted font-body mt-0.5">{subtitle}</p>}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">{action}</div>}
     </div>
   )
 }

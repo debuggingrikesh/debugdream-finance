@@ -1,6 +1,6 @@
 // ─── Rikesh's Salary Ledger ───────────────────────────────────────────────────
 import { useState } from 'react'
-import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown, RefreshCcw } from 'lucide-react'
+import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown, RefreshCcw, Link } from 'lucide-react'
 import { useSalaryLedger, useCarLoan } from '../../hooks/useFirestore'
 import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
@@ -185,30 +185,48 @@ export default function SalaryLedger() {
     const monthKey = `${bsYear}-${String(bsMonth).padStart(2, '0')}`
     const label = `${BS_MONTHS[bsMonth - 1]} ${bsYear}`
 
-    const gross = prompt("Enter Agreed Salary (NPR):", "150000")
+    // Check if an entry already exists for this month (e.g., auto-created from EMI)
+    const existing = ledger.find(l => l.monthKey === monthKey)
+    
+    const gross = prompt("Enter Agreed Salary (NPR):", existing?.grossAccrued || "150000")
     if (!gross) return
-    const emi = prompt("Enter Loan/EMI for this month (NPR):", "0")
+    const emi = prompt("Enter Loan/EMI for this month (NPR):", existing?.carLoanEMI !== undefined ? String(existing.carLoanEMI) : "0")
     if (emi === null) return
-    const taken = prompt("Enter Already Taken/Withdrawn (NPR):", "0")
+    const taken = prompt("Enter Already Taken/Withdrawn (NPR):", existing?.totalPaid !== undefined ? String(existing.totalPaid) : "0")
     if (taken === null) return
 
     try {
       const g = parseFloat(gross)
       const e = parseFloat(emi)
       const t = parseFloat(taken)
-      const newId = await addDocument('salaryLedger', {
-        monthLabel: label,
-        monthKey: monthKey,
-        grossAccrued: g,
-        carLoanEMI: e,
-        totalPaid: t,
-        status: t >= (g - e) ? 'cleared' : (t > 0 ? 'partial' : 'unpaid'),
-        isAdjustment: true,
-      })
+      
+      if (existing) {
+        // Update existing entry instead of duplicating
+        await updateDocument('salaryLedger', existing.id, {
+          grossAccrued: g,
+          carLoanEMI: e,
+          totalPaid: t,
+          status: t >= (g - e) ? 'cleared' : (t > 0 ? 'partial' : 'unpaid'),
+          isAutoCreated: false, // No longer just a placeholder
+        })
+        
+        if (e > 0) {
+          await syncEMIToCarLoan({ ...existing, carLoanEMI: e })
+        }
+      } else {
+        const newId = await addDocument('salaryLedger', {
+          monthLabel: label,
+          monthKey: monthKey,
+          grossAccrued: g,
+          carLoanEMI: e,
+          totalPaid: t,
+          status: t >= (g - e) ? 'cleared' : (t > 0 ? 'partial' : 'unpaid'),
+          isAdjustment: true,
+        })
 
-      // Sync to car loan
-      if (e > 0) {
-        await syncEMIToCarLoan({ id: newId, monthLabel: label, monthKey: monthKey, carLoanEMI: e })
+        if (e > 0) {
+          await syncEMIToCarLoan({ id: newId, monthLabel: label, monthKey: monthKey, carLoanEMI: e })
+        }
       }
     } catch (err) { console.error(err) }
   }
@@ -247,22 +265,22 @@ export default function SalaryLedger() {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4 border-l-4 border-l-blue-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Agreed</div>
-          <div className="font-mono text-text-primary text-lg font-bold">{formatNPR(totalAccrued)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">{formatNPR(totalAccrued)}</div>
         </Card>
         <Card className="p-4 border-l-4 border-l-red-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Loan/EMI</div>
-          <div className="font-mono text-text-primary text-lg font-bold">-{formatNPR(totalEMIDeducted)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">-{formatNPR(totalEMIDeducted)}</div>
         </Card>
         <Card className="p-4 border-l-4 border-l-green-500">
           <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">Total Taken</div>
-          <div className="font-mono text-text-primary text-lg font-bold">{formatNPR(totalPaid)}</div>
+          <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">{formatNPR(totalPaid)}</div>
         </Card>
         <Card className="p-4 bg-accent/5 border-l-4 border-l-accent shadow-lg shadow-accent/5">
           <div className="text-[10px] text-accent font-body uppercase tracking-wider mb-1 font-bold">Net Balance Owed</div>
-          <div className="font-mono text-accent text-2xl font-black">{formatNPR(netBalance)}</div>
+          <div className="font-mono text-accent text-lg sm:text-2xl font-black">{formatNPR(netBalance)}</div>
           <div className="text-[10px] text-accent/60 mt-1">Amount company owes you</div>
         </Card>
       </div>
@@ -278,11 +296,11 @@ export default function SalaryLedger() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-body">
+          <div className="overflow-x-auto -mx-5 px-5 scrollbar-thin">
+            <table className="w-full text-sm font-body min-w-[700px]">
               <thead className="bg-bg-elevated/50">
                 <tr>
-                  <th className="py-4 px-5 text-left text-xs text-text-muted uppercase tracking-wider font-bold">
+                  <th className="py-4 px-5 text-left text-[10px] text-text-muted uppercase tracking-wider font-bold">
                     <button
                       onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
                       className="flex items-center gap-1.5 hover:text-text-primary transition-colors group"
@@ -294,12 +312,12 @@ export default function SalaryLedger() {
                       </span>
                     </button>
                   </th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Basis</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Loan/EMI</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Net Salary</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Taken</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold bg-bg-surface/50 border-x border-border/10 ring-1 ring-accent/10">Remain</th>
-                  <th className="py-4 px-5 text-right text-xs text-text-muted uppercase tracking-wider font-bold">Status</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Basis</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Loan/EMI</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Net Salary</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Taken</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold bg-bg-surface/50 border-x border-border/10 ring-1 ring-accent/10">Remain</th>
+                  <th className="py-4 px-5 text-right text-[10px] text-text-muted uppercase tracking-wider font-bold">Status</th>
                   <th className="py-4 px-5"></th>
                 </tr>
               </thead>
@@ -311,9 +329,18 @@ export default function SalaryLedger() {
                   const paid  = entry.totalPaid    || 0
                   const rem   = net - paid
 
-                  return (
-                    <tr key={entry.id} className="hover:bg-bg-surface/50 transition-colors">
-                      <td className="py-4 px-5 font-bold text-text-primary uppercase text-xs">{entry.monthLabel}</td>
+                    return (
+                      <tr key={entry.id} className="hover:bg-bg-surface/50 transition-colors">
+                        <td className="py-4 px-5">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-text-primary uppercase text-xs">{entry.monthLabel}</span>
+                            {entry.isAutoCreated && (
+                              <span className="text-[9px] text-blue-400 font-medium uppercase tracking-tighter mt-0.5">
+                                Pending Payroll
+                              </span>
+                            )}
+                          </div>
+                        </td>
                       <td className="py-4 px-5 font-mono text-text-secondary text-right">
                         <button onClick={() => handleEditField(entry.id, 'grossAccrued', gross)} className="hover:text-accent flex items-center gap-1 justify-end ml-auto group">
                           {formatNPR(gross)}
@@ -322,6 +349,7 @@ export default function SalaryLedger() {
                       </td>
                       <td className="py-4 px-5 font-mono text-red-400 text-right">
                         <button onClick={() => handleEditField(entry.id, 'carLoanEMI', emi)} className="hover:text-accent flex items-center gap-1 justify-end ml-auto group">
+                          {entry.linkedExpenseId && <Link size={10} className="text-blue-400" title="Synced from Expenses" />}
                           -{formatNPR(emi)}
                           <Edit2 size={10} className="opacity-0 group-hover:opacity-100" />
                         </button>

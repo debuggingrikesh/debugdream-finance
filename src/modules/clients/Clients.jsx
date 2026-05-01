@@ -110,35 +110,35 @@ export default function Clients() {
         <div className="space-y-2">
           {sortedClients.map(client => (
             <Card key={client.id} className="p-4" hover>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-bg-elevated flex items-center justify-center text-sm font-display font-bold text-text-primary shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg-elevated flex items-center justify-center text-xs sm:text-sm font-display font-bold text-text-primary shrink-0">
                     {client.name?.[0] || '?'}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-display font-bold text-text-primary text-sm">{client.name}</span>
-                      <span className="text-[10px] text-text-muted border border-border px-1.5 py-0.5 rounded-md font-mono">{client.currency}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-display font-bold text-text-primary text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{client.name}</span>
+                      <span className="text-[9px] text-text-muted border border-border px-1.5 py-0.5 rounded-md font-mono">{client.currency}</span>
                       {client.recurring && (
-                        <span className="text-[10px] text-accent border border-accent/20 px-1.5 py-0.5 rounded-md">Recurring</span>
+                        <span className="text-[9px] text-accent border border-accent/20 px-1.5 py-0.5 rounded-md">Recurring</span>
                       )}
                     </div>
-                    <div className="text-xs text-text-muted font-body mt-0.5 truncate">
+                    <div className="text-[10px] sm:text-xs text-text-muted font-body mt-0.5 truncate">
                       {[client.contactPerson, client.address, client.email].filter(Boolean).join(' · ') || 'No details added'}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center justify-end gap-1 shrink-0 pt-2 xs:pt-0 border-t xs:border-t-0 border-border/10">
                   <button
                     onClick={() => openEdit(client)}
-                    className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
+                    className="w-8 h-8 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
                   >
                     <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => setDeleteId(client.id)}
-                    className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"
+                    className="w-8 h-8 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors"
                   >
                     <Trash2 size={13} />
                   </button>

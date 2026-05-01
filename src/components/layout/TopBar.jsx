@@ -52,7 +52,7 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-14 bg-bg-primary border-b border-border flex items-center px-3 gap-2 shrink-0 relative z-20">
+    <header className="h-14 bg-bg-primary border-b border-border flex items-center px-2 sm:px-3 gap-1 sm:gap-2 shrink-0 relative z-20">
 
       {/* Date — hidden on small screens */}
       <div className="hidden md:flex flex-col leading-none mr-1">
@@ -74,7 +74,7 @@ export default function TopBar() {
       <div className="flex-1" />
 
       {/* ── Month selector ───────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <button onClick={prevMonth} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
           <ChevronLeft size={14} />
         </button>
@@ -82,15 +82,15 @@ export default function TopBar() {
         <button
           onClick={() => setShowMonthPicker(v => !v)}
           className={clsx(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all',
+            'flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1.5 rounded-lg border transition-all',
             showMonthPicker
               ? 'bg-bg-elevated border-accent text-text-primary'
               : 'hover:bg-bg-elevated border-transparent text-text-secondary hover:text-text-primary'
           )}
         >
-          <span className="font-display font-semibold text-sm">{BS_MONTHS[displayMonth.month - 1]}</span>
-          <span className="font-mono text-xs text-text-muted">{displayMonth.year}</span>
-          <ChevronDown size={11} />
+          <span className="font-display font-semibold text-[13px] sm:text-sm">{BS_MONTHS[displayMonth.month - 1]}</span>
+          <span className="font-mono text-[10px] sm:text-xs text-text-muted">{displayMonth.year}</span>
+          <ChevronDown size={10} />
         </button>
 
         <button onClick={nextMonth} className="w-7 h-7 rounded-lg hover:bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
@@ -98,7 +98,7 @@ export default function TopBar() {
         </button>
 
         {!isCurrentMonth && (
-          <button onClick={() => setSelectedMonth(bs.year, bs.month)} className="text-xs text-accent hover:underline font-body ml-1">
+          <button onClick={() => setSelectedMonth(bs.year, bs.month)} className="text-[10px] sm:text-xs text-accent hover:underline font-body ml-0.5 sm:ml-1">
             Today
           </button>
         )}

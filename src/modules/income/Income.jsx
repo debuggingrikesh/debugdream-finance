@@ -190,7 +190,7 @@ export default function Income() {
       />
 
       {/* ── Summary cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         <Card className="p-4 md:p-5 glass-card group">
           <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-accent transition-colors">Total Income</div>
           <div className="font-mono text-text-primary text-xl md:text-2xl font-bold leading-none">{formatNPR(totalIncome)}</div>
@@ -234,24 +234,22 @@ export default function Income() {
 
       {/* Client summary */}
       {clientSummary.length > 0 && (
-        <Card className="p-5 glass-card">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-display font-bold text-text-primary text-sm tracking-tight">Client Revenue Distribution</h3>
+        <Card className="p-4 md:p-5 glass-card">
+          <div className="flex items-center justify-between mb-4 md:mb-5">
+            <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm tracking-tight">Client Revenue Distribution</h3>
             <span className="text-[10px] text-text-muted font-mono uppercase">{monthLabel}</span>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {clientSummary.map(([client, amount]) => (
-              <div key={client} className="group cursor-default">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-body text-text-secondary font-medium group-hover:text-text-primary transition-colors">{client}</span>
-                  <span className="font-mono text-text-primary text-xs font-bold">{formatNPR(amount)}</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden ring-1 ring-white/[0.02]">
+              <div key={client} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 group cursor-default">
+                <span className="text-xs font-body text-text-secondary font-medium w-full sm:w-32 truncate group-hover:text-text-primary transition-colors">{client}</span>
+                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden ring-1 ring-white/[0.02]">
                   <div
                     className="h-full bg-accent rounded-full transition-all duration-700 ease-out group-hover:shadow-[0_0_10px_#E8192C]"
                     style={{ width: `${totalIncome > 0 ? (amount / totalIncome) * 100 : 0}%` }}
                   />
                 </div>
+                <span className="font-mono text-text-primary text-xs font-bold w-full sm:w-28 text-left sm:text-right shrink-0">{formatNPR(amount)}</span>
               </div>
             ))}
           </div>

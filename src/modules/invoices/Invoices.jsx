@@ -298,11 +298,11 @@ export default function Invoices() {
                       <FileText size={20} className={clsx("transition-colors", inv.status === 'Paid' ? 'text-green-400' : 'text-text-muted group-hover:text-accent')} />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-display font-bold text-text-primary text-base md:text-lg tracking-tight">{inv.invoiceNumber}</span>
                         <Badge variant={color}>{inv.status}</Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-text-secondary font-body">
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-[10px] sm:text-xs text-text-secondary font-body">
                         <span className="font-medium text-text-primary">{inv.clientName}</span>
                         <span className="text-text-muted">·</span>
                         <span>Issued {inv.invoiceDate}</span>

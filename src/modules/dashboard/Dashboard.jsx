@@ -138,15 +138,17 @@ export default function Dashboard() {
           {loading ? (
             <div className="h-44 bg-bg-elevated rounded-xl animate-pulse" />
           ) : (
-            <ResponsiveContainer width="100%" height={190}>
-              <BarChart data={fyChartData} barGap={2}>
-                <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={40} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Bar dataKey="income"   fill="var(--color-accent)" radius={[3,3,0,0]} maxBarSize={14} />
-                <Bar dataKey="expenses" fill="rgba(255,255,255,0.05)" radius={[3,3,0,0]} maxBarSize={14} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] md:h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fyChartData} barGap={2} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={40} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+                  <Bar dataKey="income"   fill="var(--color-accent)" radius={[3,3,0,0]} maxBarSize={14} />
+                  <Bar dataKey="expenses" fill="rgba(255,255,255,0.05)" radius={[3,3,0,0]} maxBarSize={14} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </Card>
 

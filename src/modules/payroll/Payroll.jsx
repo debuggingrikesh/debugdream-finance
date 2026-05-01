@@ -261,25 +261,25 @@ export default function Payroll() {
 
       {/* ── Payroll table ────────────────────────────────────────────────────── */}
       <Card className="p-4 md:p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-display font-bold text-text-primary text-base">{monthLabel} Payroll</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <h2 className="font-display font-bold text-text-primary text-base truncate">{monthLabel} Payroll</h2>
             {existingRun && (
-              <p className="text-xs text-green-400 font-body mt-0.5 flex items-center gap-1">
+              <p className="text-[10px] sm:text-xs text-green-400 font-body mt-0.5 flex items-center gap-1">
                 <CheckCircle size={10} /> Run {existingRun.runAt?.split('T')[0]}
               </p>
             )}
           </div>
-          <div className="flex gap-4 text-right">
-            <div>
-              <div className="text-xs text-text-muted font-body">Net Payout</div>
-              <div className="font-mono text-text-primary text-base md:text-lg font-bold">
+          <div className="flex gap-4 sm:text-right">
+            <div className="flex-1 sm:flex-none">
+              <div className="text-[10px] sm:text-xs text-text-muted font-body uppercase tracking-wider">Net Payout</div>
+              <div className="font-mono text-text-primary text-sm sm:text-lg font-bold">
                 {formatNPR(preview.reduce((s, e) => s + (e.netPay || 0), 0))}
               </div>
             </div>
-            <div>
-              <div className="text-xs text-text-muted font-body">Total CTC</div>
-              <div className="font-mono text-accent text-base md:text-lg font-bold">
+            <div className="flex-1 sm:flex-none">
+              <div className="text-[10px] sm:text-xs text-text-muted font-body uppercase tracking-wider">Total CTC</div>
+              <div className="font-mono text-accent text-sm sm:text-lg font-bold">
                 {formatNPR(preview.reduce((s, e) => s + (e.totalCTC || 0), 0))}
               </div>
             </div>
@@ -287,8 +287,8 @@ export default function Payroll() {
         </div>
 
         {/* Scrollable table — min-width prevents crush on mobile */}
-        <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5">
-          <table className="w-full text-sm font-body" style={{ minWidth: 950 }}>
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-5 sm:px-5 scrollbar-thin">
+          <table className="w-full text-sm font-body border-collapse" style={{ minWidth: 950 }}>
             <thead>
               <tr className="border-b border-border">
                 {['Employee', 'Gross', 'SSF (11%)', 'TDS', 'Net Pay', 'Employer SSF', 'Total CTC', '']

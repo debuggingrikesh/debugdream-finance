@@ -70,17 +70,19 @@ export default function Inventory() {
       <SectionHeader title="Inventory" subtitle={`${items.length} items · Total value: ${formatNPR(totalValue)}`}
         action={<Button size="sm" onClick={openAdd} icon={Plus}>Add Item</Button>} />
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..."
-          className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent w-48" />
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
-          <option value="all">All categories</option>
-          {DEFAULT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-        </select>
-        <select value={filterCond} onChange={e => setFilterCond(e.target.value)} className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
-          <option value="all">All conditions</option>
-          {['Good', 'Fair', 'Needs Repair', 'Disposed'].map(c => <option key={c}>{c}</option>)}
-        </select>
+          className="bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent w-full sm:w-64" />
+        <div className="flex gap-2 w-full sm:w-auto">
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="flex-1 sm:flex-none bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
+            <option value="all">All categories</option>
+            {DEFAULT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <select value={filterCond} onChange={e => setFilterCond(e.target.value)} className="flex-1 sm:flex-none bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent">
+            <option value="all">All conditions</option>
+            {['Good', 'Fair', 'Needs Repair', 'Disposed'].map(c => <option key={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
 
       <Card className="p-5">

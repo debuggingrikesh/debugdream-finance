@@ -278,21 +278,21 @@ export default function MyExpenses() {
       {activeTab === 'active' && (
         <>
           {/* Active month total */}
-          <Card className="p-6 border-l-4 border-l-accent">
-            <div className="flex items-center justify-between">
+          <Card className="p-4 sm:p-6 border-l-4 border-l-accent">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="text-xs text-text-muted font-body uppercase tracking-wider mb-1">
+                <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">
                   {/* Show the label of the specific month we are currently seeing in the list */}
                   {(months.find(m => m.status === 'open')?.monthLabel) || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
                 </div>
-                <div className="font-mono text-text-primary text-3xl font-bold">{formatNPR(activeTotal)}</div>
-                <div className="text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
+                <div className="font-mono text-text-primary text-2xl sm:text-3xl font-bold">{formatNPR(activeTotal)}</div>
+                <div className="text-[10px] sm:text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>
               </div>
-              <div className="flex flex-col gap-2">
-                <Button onClick={() => setShowAdd(true)} icon={Plus}>Add Expense</Button>
+              <div className="flex flex-row sm:flex-col gap-2">
+                <Button className="flex-1 sm:flex-none" onClick={() => setShowAdd(true)} icon={Plus}>Add Expense</Button>
                 {activeEntries.length > 0 && (
-                  <Button variant="secondary" onClick={() => setShowClose(true)} icon={Lock}>
-                    Close & Reimburse
+                  <Button className="flex-1 sm:flex-none" variant="secondary" onClick={() => setShowClose(true)} icon={Lock}>
+                    Close
                   </Button>
                 )}
               </div>
@@ -319,45 +319,47 @@ export default function MyExpenses() {
       {activeTab === 'history' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Month list */}
-          <Card className="p-4">
-            <h3 className="font-display font-bold text-text-primary text-sm mb-3">Closed Months</h3>
-            {closedMonths.length === 0 ? (
-              <p className="text-text-muted text-sm font-body text-center py-6">No closed months yet</p>
-            ) : (
-              <div className="space-y-1">
-                {closedMonths.map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => setSelectedHistory(m)}
-                    className={clsx(
-                      'w-full flex items-center justify-between p-2.5 rounded-xl transition-all font-body text-sm',
-                      selectedHistory?.id === m.id
-                        ? 'bg-accent/10 text-accent'
-                        : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                    )}
-                  >
-                    <span>{formatMonthKey(m.monthLabel, m.key)}</span>
-                    <span className="font-mono">{formatNPR(m.total)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
+          <div className="space-y-4">
+            <Card className="p-4">
+              <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm mb-3 uppercase tracking-wider">Closed Months</h3>
+              {closedMonths.length === 0 ? (
+                <p className="text-text-muted text-sm font-body text-center py-6">No closed months yet</p>
+              ) : (
+                <div className="space-y-1">
+                  {closedMonths.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedHistory(m)}
+                      className={clsx(
+                        'w-full flex items-center justify-between p-2.5 rounded-xl transition-all font-body text-xs sm:text-sm',
+                        selectedHistory?.id === m.id
+                          ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
+                          : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                      )}
+                    >
+                      <span className="truncate">{formatMonthKey(m.monthLabel, m.key)}</span>
+                      <span className="font-mono shrink-0 ml-2">{formatNPR(m.total)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
 
           {/* Month detail */}
           <div className="lg:col-span-2">
             {selectedHistory ? (
-              <Card className="p-5">
-                <div className="flex items-center justify-between mb-4">
+              <Card className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
-                    <h3 className="font-display font-bold text-text-primary text-base">{formatMonthKey(selectedHistory.monthLabel, selectedHistory.key)}</h3>
-                    <div className="text-xs text-green-400 font-body flex items-center gap-1 mt-0.5">
+                    <h3 className="font-display font-bold text-text-primary text-sm sm:text-base">{formatMonthKey(selectedHistory.monthLabel, selectedHistory.key)}</h3>
+                    <div className="text-[10px] sm:text-xs text-green-400 font-body flex items-center gap-1 mt-0.5">
                       <CheckCircle size={10} /> Reimbursed via {selectedHistory.reimbursementSource}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs text-text-muted">Total Reimbursed</div>
-                    <div className="font-mono text-text-primary text-xl font-bold">{formatNPR(selectedHistory.total)}</div>
+                  <div className="sm:text-right">
+                    <div className="text-[10px] text-text-muted uppercase tracking-wider">Total Reimbursed</div>
+                    <div className="font-mono text-text-primary text-lg sm:text-xl font-bold">{formatNPR(selectedHistory.total)}</div>
                   </div>
                 </div>
                 <Table columns={activeColumns} data={historyEntries} emptyMessage="No entries for this month" />

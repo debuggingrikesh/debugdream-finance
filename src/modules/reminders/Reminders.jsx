@@ -58,14 +58,14 @@ export default function Reminders() {
             const overdue = isOverdue(r)
             return (
               <Card key={r.id} className={clsx('p-4', overdue && 'border-red-500/30')}>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
                       r.status === 'done' ? 'bg-green-500/10 text-green-400' : overdue ? 'bg-red-500/10 text-red-400' : 'bg-bg-elevated text-text-muted')}>
                       {r.status === 'done' ? <CheckCircle size={14} /> : <Clock size={14} />}
                     </div>
-                    <div>
-                      <div className="font-body font-medium text-text-primary text-sm">{r.title}</div>
+                    <div className="min-w-0">
+                      <div className="font-body font-medium text-text-primary text-sm truncate">{r.title}</div>
                       {r.amount > 0 && (
                         <div className="font-mono text-accent text-sm mt-0.5">
                           {r.currency && r.currency !== 'NPR' ? formatByCurrency(r.amount, r.currency) : formatNPR(r.amount)}
@@ -76,21 +76,21 @@ export default function Reminders() {
                           {overdue ? '⚠ Overdue · ' : 'Due '}{r.dueDate}
                         </div>
                       )}
-                      {r.notes && <div className="text-xs text-text-muted mt-1">{r.notes}</div>}
-                      <div className="mt-1">
+                      {r.notes && <div className="text-xs text-text-muted mt-1 italic">{r.notes}</div>}
+                      <div className="mt-1.5 flex flex-wrap gap-1">
                         <Badge variant={r.type === 'tds' ? 'warning' : r.type === 'ssf' ? 'info' : 'default'}>
                           {r.type || 'manual'}
                         </Badge>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center sm:flex-col sm:items-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/10">
                     {r.status !== 'done' && (
-                      <button onClick={() => markDone(r)} className="text-xs text-text-muted hover:text-green-400 border border-border hover:border-green-500/30 px-2.5 py-1.5 rounded-lg font-body transition-all flex items-center gap-1">
-                        <CheckCircle size={11} /> Done
+                      <button onClick={() => markDone(r)} className="flex-1 sm:flex-none text-[10px] sm:text-xs text-text-muted hover:text-green-400 border border-border hover:border-green-500/30 px-3 py-1.5 rounded-lg font-body transition-all flex items-center justify-center gap-1">
+                        <CheckCircle size={11} /> Mark Done
                       </button>
                     )}
-                    <button onClick={() => setDeleteId(r.id)} className="w-7 h-7 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
+                    <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 rounded-lg hover:bg-accent/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors">
                       <Trash2 size={12} />
                     </button>
                   </div>

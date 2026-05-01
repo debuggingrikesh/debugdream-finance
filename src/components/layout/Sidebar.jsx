@@ -123,19 +123,19 @@ export default function Sidebar() {
               key={to}
               to={to}
               className={clsx(
-                'flex-shrink-0 flex flex-col items-center justify-center gap-0.5 px-3.5 min-w-[60px] transition-colors relative',
+                'flex-shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 xs:px-3.5 min-w-[54px] xs:min-w-[60px] transition-colors relative',
                 isActive ? 'text-accent' : 'text-text-muted'
               )}
             >
               <div className="relative">
-                <Icon size={18} />
+                <Icon size={17} />
                 {isReminder && activeReminders > 0 && (
                   <span className="absolute -top-1 -right-1.5 w-3 h-3 bg-accent rounded-full text-text-primary text-[8px] flex items-center justify-center font-bold">
                     {activeReminders > 9 ? '9+' : activeReminders}
                   </span>
                 )}
               </div>
-              <span className="text-[9px] font-body whitespace-nowrap leading-tight">{label.split(' ')[0]}</span>
+              <span className="text-[8px] xs:text-[9px] font-body whitespace-nowrap leading-tight">{label.split(' ')[0]}</span>
             </NavLink>
           )
         })}
