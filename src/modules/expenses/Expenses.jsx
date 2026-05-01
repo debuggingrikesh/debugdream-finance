@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Plus, Download, ArrowDownRight, Trash2, Banknote } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useAllExpenses } from '../../hooks/useFirestore'
-import { addDocument, deleteDocument, updateDocument } from '../../firebase/firestore'
+import { addDocument, deleteDocument, updateDocument, getDocuments, where } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
 import { adToBS, BS_MONTHS, todayString } from '../../utils/dateUtils'
 import {
@@ -85,17 +85,47 @@ export default function Expenses() {
         bsMonthName: bs?.monthName,
         type: 'expense',
       }
-      await addDocument('expenses', docData)
+      const expenseId = await addDocument('expenses', docData)
 
       // Auto-update car loan tracker
       if (form.category === 'Car Loan EMI') {
+        const emiAmount = parseFloat(form.amount) || 0
         await addDocument('carLoanPayments', {
           date: form.date,
-          amount: parseFloat(form.amount) || 0,
+          amount: emiAmount,
           notes: form.notes,
           bsYear: bs?.year,
           bsMonth: bs?.month,
+          linkedExpenseId: expenseId,
         })
+
+        // ── Auto-Sync to Salary Ledger ──────────────────────────────────────
+        // Find or create a ledger entry for this BS month
+        if (bs) {
+          const monthKey = `${bs.year}-${String(bs.month).padStart(2, '0')}`
+          
+          const existing = await getDocuments('salaryLedger', [where('monthKey', '==', monthKey)])
+          
+          if (existing.length > 0) {
+            // Update existing entry with the EMI amount
+            await updateDocument('salaryLedger', existing[0].id, {
+              carLoanEMI: emiAmount,
+              linkedExpenseId: expenseId,
+            })
+          } else {
+            // Create a new month entry for Rikesh with the EMI deduction
+            await addDocument('salaryLedger', {
+              monthLabel: `${bs.monthName} ${bs.year}`,
+              monthKey: monthKey,
+              grossAccrued: 150000, // Standard agreed salary
+              carLoanEMI: emiAmount,
+              totalPaid: 0,
+              status: 'unpaid',
+              linkedExpenseId: expenseId,
+              isAutoCreated: true,
+            })
+          }
+        }
       }
 
       setShowAdd(false)
@@ -132,6 +162,26 @@ export default function Expenses() {
 
   const handleDelete = async () => {
     if (!deleteId) return
+    
+    // Check if this was a Car Loan EMI expense
+    const expense = filtered.find(e => e.id === deleteId)
+    if (expense?.category === 'Car Loan EMI') {
+      const linked = await getDocuments('salaryLedger', [where('linkedExpenseId', '==', deleteId)])
+      for (const entry of linked) {
+        // Clear the EMI if it was synced from this expense
+        await updateDocument('salaryLedger', entry.id, { 
+          carLoanEMI: 0, 
+          linkedExpenseId: null 
+        })
+      }
+      
+      // Also clear from car loan payments
+      const carPayments = await getDocuments('carLoanPayments', [where('linkedExpenseId', '==', deleteId)])
+      for (const p of carPayments) {
+        await deleteDocument('carLoanPayments', p.id)
+      }
+    }
+
     await deleteDocument('expenses', deleteId)
     setDeleteId(null)
   }
