@@ -15,6 +15,8 @@ import { getFiscalYearMonths, BS_MONTHS } from '../../utils/dateUtils'
 import { StatCard, Card, Badge, SectionHeader, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
 
+const PIE_COLORS = ['#E8192C', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6']
+
 // ─── Custom components for Chart ──────────────────────────────────────
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
@@ -45,7 +47,7 @@ const renderActiveShape = (props) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-glass rounded-xl p-3 shadow-2xl backdrop-blur-md border border-white/10">
+    <div className="bg-bg-surface rounded-xl p-3 shadow-2xl backdrop-blur-md border border-white/10">
       <p className="text-[10px] text-text-secondary font-display uppercase tracking-wider mb-2">{label}</p>
       {payload.map((p, i) => (
         <div key={i} className="flex items-center gap-2 text-sm">
@@ -114,17 +116,17 @@ export default function Dashboard() {
 
       {/* ── Stat cards: 2 col → 3 col (sm) → 5 col (lg) ─────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
-        <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}   accent={true}  loading={loading} className="glass-card" />
-        <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                loading={loading} className="glass-card" />
-        <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} className="glass-card" />
-        <StatCard label="Bank Balance (NPR)" value={formatNPR(bankBalance)}   icon={Landmark}                loading={loading} className="glass-card" />
-        <StatCard label="Cash in Hand (NPR)" value={formatNPR(cashBalance)}   icon={Banknote}                loading={loading} className="glass-card" />
+        <StatCard label="Income (NPR)"       value={formatNPR(totalIncome)}   icon={TrendingUp}   accent={true}  loading={loading} className="" />
+        <StatCard label="Expenses (NPR)"     value={formatNPR(totalExpenses)} icon={TrendingDown}                loading={loading} className="" />
+        <StatCard label="Net Balance (NPR)"  value={formatNPR(netBalance)}    icon={netBalance >= 0 ? ArrowUpRight : ArrowDownRight} accent={netBalance >= 0} loading={loading} className="" />
+        <StatCard label="Bank Balance (NPR)" value={formatNPR(bankBalance)}   icon={Landmark}                loading={loading} className="" />
+        <StatCard label="Cash in Hand (NPR)" value={formatNPR(cashBalance)}   icon={Banknote}                loading={loading} className="" />
       </div>
 
       {/* ── Charts: stacked on mobile, side-by-side on lg ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* Bar chart */}
-        <Card className="p-4 md:p-5 lg:col-span-2 glass-card">
+        <Card className="p-4 md:p-5 lg:col-span-2 ">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="font-display font-bold text-text-primary text-sm md:text-base">Monthly Overview</h2>
@@ -132,7 +134,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-3 text-[10px] font-mono tracking-tighter uppercase text-text-muted">
               <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-accent" />Income</span>
-              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-white/10" />Expense</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />Expense</span>
             </div>
           </div>
           {loading ? (
@@ -145,7 +147,7 @@ export default function Dashboard() {
                   <YAxis tick={{ fill: 'var(--color-text-muted)', fontSize: 9, fontFamily: 'DM Mono' }} axisLine={false} tickLine={false} tickFormatter={v => formatCompact(v)} width={40} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
                   <Bar dataKey="income"   fill="var(--color-accent)" radius={[3,3,0,0]} maxBarSize={14} />
-                  <Bar dataKey="expenses" fill="rgba(255,255,255,0.05)" radius={[3,3,0,0]} maxBarSize={14} />
+                  <Bar dataKey="expenses" fill="#3b82f6" radius={[3,3,0,0]} maxBarSize={14} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -153,7 +155,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Pie chart */}
-        <Card className="p-4 md:p-5 glass-card">
+        <Card className="p-4 md:p-5 ">
           <div className="flex items-center justify-between mb-1">
             <h2 className="font-display font-bold text-text-primary text-sm md:text-base">By Category</h2>
             <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />

@@ -223,7 +223,7 @@ export default function Invoices() {
             <Card
               key={status}
               className={clsx(
-                'p-4 md:p-5 glass-card relative overflow-hidden group',
+                'p-4 md:p-5  relative overflow-hidden group',
                 filterStatus === status ? 'border-accent shadow-accent/10' : 'opacity-80 hover:opacity-100'
               )}
               hover

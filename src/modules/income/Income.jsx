@@ -191,21 +191,21 @@ export default function Income() {
 
       {/* ── Summary cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-        <Card className="p-4 md:p-5 glass-card group">
+        <Card className="p-4 md:p-5  group">
           <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-accent transition-colors">Total Income</div>
           <div className="font-mono text-text-primary text-xl md:text-2xl font-bold leading-none">{formatNPR(totalIncome)}</div>
           <div className="w-full h-1 bg-accent/10 mt-3 rounded-full overflow-hidden">
             <div className="h-full bg-accent w-full" />
           </div>
         </Card>
-        <Card className="p-4 md:p-5 glass-card group">
+        <Card className="p-4 md:p-5  group">
           <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-blue-400 transition-colors">Bank Ledger</div>
           <div className="font-mono text-blue-400 text-xl md:text-2xl font-bold leading-none">{formatNPR(totalBank)}</div>
           <div className="w-full h-1 bg-blue-400/10 mt-3 rounded-full overflow-hidden">
             <div className="h-full bg-blue-400" style={{ width: `${totalIncome > 0 ? (totalBank / totalIncome) * 100 : 0}%` }} />
           </div>
         </Card>
-        <Card className="p-4 md:p-5 glass-card group">
+        <Card className="p-4 md:p-5  group">
           <div className="text-[10px] text-text-muted font-display uppercase tracking-widest mb-2 group-hover:text-yellow-400 transition-colors">Cash Ledger</div>
           <div className="font-mono text-yellow-400 text-xl md:text-2xl font-bold leading-none">{formatNPR(totalCash)}</div>
           <div className="w-full h-1 bg-yellow-400/10 mt-3 rounded-full overflow-hidden">
@@ -234,7 +234,7 @@ export default function Income() {
 
       {/* Client summary */}
       {clientSummary.length > 0 && (
-        <Card className="p-4 md:p-5 glass-card">
+        <Card className="p-4 md:p-5 ">
           <div className="flex items-center justify-between mb-4 md:mb-5">
             <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm tracking-tight">Client Revenue Distribution</h3>
             <span className="text-[10px] text-text-muted font-mono uppercase">{monthLabel}</span>
@@ -257,7 +257,7 @@ export default function Income() {
       )}
 
       {/* ── Transactions table ─────────────────────────────────────────────── */}
-      <Card className="p-0 overflow-hidden glass-card border-none ring-1 ring-white/5">
+      <Card className="p-0 overflow-hidden  border-none ring-1 ring-white/5">
         <div className="p-5 border-b border-white/5 flex items-center justify-between">
           <h3 className="font-display font-bold text-text-primary text-sm tracking-tight">
             Transaction Ledger
