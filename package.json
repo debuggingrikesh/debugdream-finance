@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:payroll-salary-expenses": "node src/scripts/fixPayrollSalaryExpenses.js"
   },
   "dependencies": {
     "clsx": "^2.1.0",
     "date-fns": "^3.1.0",
     "firebase": "^10.14.1",
+    "firebase-admin": "^13.10.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.303.0",

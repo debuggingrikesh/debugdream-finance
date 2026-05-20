@@ -16,6 +16,7 @@ export default function MyExpenses() {
   const [showAdd, setShowAdd] = useState(false)
   const [showClose, setShowClose] = useState(false)
   const [selectedHistory, setSelectedHistory] = useState(null)
+  const [selectedActiveMonthId, setSelectedActiveMonthId] = useState(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [form, setForm] = useState({ date: todayString(), category: 'Food', amount: '', note: '' })
   const [reimbursementSource, setReimbursementSource] = useState('cash')
@@ -26,22 +27,26 @@ export default function MyExpenses() {
   const { bs: todayBS } = getTodayBoth()
   const currentMonthKey = `${todayBS.year}-${String(todayBS.month).padStart(2, '0')}`
 
-  // Active month entries - Show ALL entries linked to any OPEN month record
-  const activeEntries = useMemo(() => {
-    const openMonths = months.filter(m => m.status === 'open')
-    const openIds = openMonths.map(m => m.id)
-    const openKeys = openMonths.map(m => m.key)
+  const openMonths = useMemo(() => {
+    return months.filter(m => m.status === 'open').sort((a, b) => (a.key || '').localeCompare(b.key || ''))
+  }, [months])
 
+  const activeMonth = useMemo(() => {
+    if (openMonths.length === 0) return null
+    return openMonths.find(m => m.id === selectedActiveMonthId) || openMonths[0]
+  }, [openMonths, selectedActiveMonthId])
+
+  // Active month entries - Show entries linked to the currently selected active month record
+  const activeEntries = useMemo(() => {
+    if (!activeMonth) return []
     return entries.filter(e => {
-      // 1. If tied to an open month ID, show it
-      if (e.monthId && openIds.includes(e.monthId)) return true
+      // 1. If tied to this specific month ID, show it
+      if (e.monthId) return e.monthId === activeMonth.id
       
-      // 2. If legacy (no ID), show if key matches any open month
-      if (!e.monthId && openKeys.includes(e.monthKey)) return true
-      
-      return false
+      // 2. If legacy (no ID), show if key matches this month key
+      return e.monthKey === activeMonth.key
     })
-  }, [entries, months])
+  }, [entries, activeMonth])
 
   const activeTotal = activeEntries.reduce((s, e) => s + (e.amount || 0), 0)
 
@@ -84,26 +89,23 @@ export default function MyExpenses() {
     setSaving(true)
     try {
       const bs = bsFromDate(form.date)
+      const entryMonthKey = bs ? `${bs.year}-${String(bs.month).padStart(2, '0')}` : currentMonthKey
+      const monthId = await ensureActiveMonth(entryMonthKey, bs)
+
       const data = {
         ...form,
         amount: parseFloat(form.amount) || 0,
         bsYear: bs?.year,
         bsMonth: bs?.month,
         bsDay: bs?.day,
+        monthKey: entryMonthKey,
+        monthId,
       }
 
       if (editingEntry) {
         await updateDocument('myExpenses', editingEntry.id, data)
       } else {
-        // Link to the month based on the EXPENSE DATE, not today's date
-        const entryMonthKey = bs ? `${bs.year}-${String(bs.month).padStart(2, '0')}` : currentMonthKey
-        const monthId = await ensureActiveMonth(entryMonthKey, bs)
-        
-        await addDocument('myExpenses', {
-          ...data,
-          monthKey: entryMonthKey,
-          monthId,
-        })
+        await addDocument('myExpenses', data)
       }
       
       setShowAdd(false)
@@ -129,8 +131,7 @@ export default function MyExpenses() {
 
   // ── Close and reimburse ───────────────────────────────────────────────────
   const handleClose = async () => {
-    // If we have open months, we prioritize the oldest one to close first
-    const monthToClose = months.find(m => m.status === 'open')
+    const monthToClose = activeMonth
     if (!monthToClose) return
 
     setSaving(true)
@@ -140,7 +141,10 @@ export default function MyExpenses() {
 
       // Calculate the REAL total for the specific month we are closing
       // (This prevents using the Baisakh total for a Chaitra closure)
-      const entriesToSeal = entries.filter(e => e.monthKey === monthToClose.key)
+      const entriesToSeal = entries.filter(e => {
+        if (e.monthId) return e.monthId === monthToClose.id
+        return e.monthKey === monthToClose.key
+      })
       const totalToReimburse = entriesToSeal.reduce((s, e) => s + (e.amount || 0), 0)
 
       // 1. Create reimbursement expense in company expenses
@@ -163,26 +167,22 @@ export default function MyExpenses() {
         }
       })
 
-      // 2. Identify all open month records for this specific month key and close them
-      const relatedOpenMonths = months.filter(m => m.key === monthToClose.key && m.status === 'open')
-      relatedOpenMonths.forEach(m => {
-        ops.push({
-          type: 'update',
-          collectionName: 'myExpenseMonths',
-          id: m.id,
-          data: {
-            status: 'closed',
-            total: m.id === monthToClose.id ? totalToReimburse : 0,
-            reimbursedDate: todayString(),
-            reimbursementSource,
-          }
-        })
+      // 2. Close only the selected active month record
+      ops.push({
+        type: 'update',
+        collectionName: 'myExpenseMonths',
+        id: monthToClose.id,
+        data: {
+          status: 'closed',
+          total: totalToReimburse,
+          reimbursedDate: todayString(),
+          reimbursementSource,
+        }
       })
 
-      // 3. Nuclear Seal: Force all entries matching this monthKey to have the master monthId.
+      // 3. Nuclear Seal: Force all entries matching this month to have the master monthId.
       // This is what prevents them from 're-appearing' later.
       entriesToSeal.forEach(entry => {
-        // Even if they already have an ID, we update it to the master ID to be safe
         ops.push({
           type: 'update',
           collectionName: 'myExpenses',
@@ -260,19 +260,42 @@ export default function MyExpenses() {
       <SectionHeader title="My Expenses" subtitle="Rikesh's personal expense tracker & reimbursement" />
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1 w-fit">
-        {[{ id: 'active', label: 'Active Month' }, { id: 'history', label: 'History' }].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={clsx(
-              'px-4 py-2 rounded-lg text-sm font-body transition-all',
-              activeTab === tab.id ? 'bg-accent text-text-primary' : 'text-text-muted hover:text-text-primary'
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex gap-1 bg-bg-surface border border-border rounded-xl p-1 w-fit">
+          {[{ id: 'active', label: 'Active Month' }, { id: 'history', label: 'History' }].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={clsx(
+                'px-4 py-2 rounded-lg text-sm font-body transition-all',
+                activeTab === tab.id ? 'bg-accent text-text-primary' : 'text-text-muted hover:text-text-primary'
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* If there are multiple open months, let the user select which one to view */}
+        {activeTab === 'active' && openMonths.length > 1 && (
+          <div className="flex items-center gap-1.5 bg-bg-surface border border-border rounded-xl p-1 w-fit">
+            <span className="text-[10px] text-text-muted font-body uppercase tracking-wider pl-2 pr-1 font-semibold">Active Period:</span>
+            {openMonths.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setSelectedActiveMonthId(m.id)}
+                className={clsx(
+                  'px-3 py-1.5 rounded-lg text-xs font-body transition-all',
+                  activeMonth?.id === m.id
+                    ? 'bg-accent text-text-primary font-medium shadow-sm'
+                    : 'text-text-muted hover:text-text-primary'
+                )}
+              >
+                {m.monthLabel}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {activeTab === 'active' && (
@@ -283,7 +306,7 @@ export default function MyExpenses() {
               <div>
                 <div className="text-[10px] text-text-muted font-body uppercase tracking-wider mb-1">
                   {/* Show the label of the specific month we are currently seeing in the list */}
-                  {(months.find(m => m.status === 'open')?.monthLabel) || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
+                  {activeMonth?.monthLabel || `${BS_MONTHS[todayBS.month - 1]} ${todayBS.year}`} — Total Spent
                 </div>
                 <div className="font-mono text-text-primary text-2xl sm:text-3xl font-bold">{formatNPR(activeTotal)}</div>
                 <div className="text-[10px] sm:text-xs text-text-muted font-body mt-1">{activeEntries.length} entries · Pending reimbursement</div>

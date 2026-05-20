@@ -158,8 +158,7 @@ export default function Payroll() {
       })
       
       const depositTotals = getPayrollDeposits(results)
-      const staffResults  = results.filter(r => !r.isOwner && r.id !== 'rikesh')
-      const staffNetPay   = staffResults.reduce((s, r) => s + (r.netPay || 0), 0)
+      const payrollTotalNetPay = results.reduce((s, r) => s + (r.netPay || 0), 0)
 
       const run = {
         monthKey,
@@ -174,23 +173,22 @@ export default function Payroll() {
       }
       await addRun(run)
 
-      // ── Automated Expense Entry (CASH ONLY) ────────────────────────────────
-      // We only log an expense for actual CASH leaving the bank (Staff salaries)
-      // Rikesh's salary is handled as a liability in his Ledger
-      if (staffNetPay > 0) {
+      // ── Automated Expense Entry (Payroll salary accrual) ────────────────
+      // Log total payroll salary expense for the run, including owner/CEO accruals.
+      // Actual CEO salary withdrawals remain separate in the Salary Ledger.
+      if (payrollTotalNetPay > 0) {
         const today = todayString()
-        const bs = adToBS(today)
         await addDocument('expenses', {
           date:          today,
           category:      'Salary',
-          description:   `Staff Salaries (Direct payout) - ${monthLabel}`,
-          amount:        staffNetPay,
+          description:   `Payroll Salaries - ${monthLabel}`,
+          amount:        payrollTotalNetPay,
           paymentSource: 'bank',
           type:          'expense',
-          bsYear:        bs.year,
-          bsMonth:       bs.month,
-          bsDay:         bs.day,
-          bsMonthName:   bs.monthName,
+          bsYear:        selectedMonth.year,
+          bsMonth:       selectedMonth.month,
+          bsDay:         1,
+          bsMonthName:   BS_MONTHS[selectedMonth.month - 1],
           linkedRun:     monthKey,
         })
       }
