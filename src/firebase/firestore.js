@@ -91,6 +91,8 @@ export const subscribeToCollection = (collectionName, callback, constraints = []
       return { ...data, id: d.id }
     })
     callback(docs)
+  }, (error) => {
+    console.error(`[Firestore] onSnapshot error for "${collectionName}":`, error.message)
   })
 }
 
