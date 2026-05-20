@@ -26,8 +26,9 @@ const calcEmployee = (emp, carLoanEMI, ytd = {}) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Payroll() {
   const { selectedMonth, settings, setSelectedMonth } = useApp()
-  const { data: employees, add: addEmployee, update: updateEmployee } = useEmployees()
-  const { data: payrollRuns, add: addRun } = usePayrollRuns()
+  const { data: employees, loading: employeesLoading, add: addEmployee, update: updateEmployee } = useEmployees()
+  const { data: payrollRuns, loading: runsLoading, add: addRun } = usePayrollRuns()
+  const loading = employeesLoading || runsLoading
 
   const [showRunModal, setShowRunModal] = useState(false)
   const [showEmployeeModal, setShowEmployeeModal] = useState(false)

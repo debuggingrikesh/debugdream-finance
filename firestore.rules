@@ -5,7 +5,8 @@ service cloud.firestore {
     // Replace with your actual Google account email
     function isAuthorized() {
       return request.auth != null &&
-             request.auth.token.email == 'rikesh@debugdream.com';
+             (request.auth.token.email == 'rikesh@debugdream.com' ||
+              request.auth.token.email == 'rikeshkarmacharya.rk@gmail.com');
     }
 
     // All collections — only accessible to the authorized user
