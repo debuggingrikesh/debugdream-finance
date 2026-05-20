@@ -15,7 +15,16 @@ import { getFiscalYearMonths, BS_MONTHS } from '../../utils/dateUtils'
 import { StatCard, Card, Badge, SectionHeader, EmptyState } from '../../components/ui/index'
 import clsx from 'clsx'
 
-const PIE_COLORS = ['#E8192C', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6']
+const PIE_COLORS = [
+'#3b82f6', // primary expense blue (matches bar chart)
+'#60a5fa',
+'#93c5fd',
+'#bfdbfe',
+'#7dd3fc',
+'#10b981',
+'#f59e0b',
+'#ec4899',
+]
 
 // ─── Custom components for Chart ──────────────────────────────────────
 const renderActiveShape = (props) => {

@@ -52,30 +52,22 @@ export default function Payroll() {
   )
 
   // ── Smart month detection: show earliest unrun month ─────────────────────
-  // Starts from Chaitra 2082 (month 12, year 2082) and advances after each run
+  // ── Default to current BS month (use exact date) ───────────────────────
+  // Instead of auto-selecting the earliest unrun month, default to today's
+  // Bikram Sambat month when no month is currently selected. This ensures
+  // payroll runs use the exact current month by default.
   useEffect(() => {
-    if (!payrollRuns || payrollRuns.length === undefined) return
-    const PAYROLL_START = { year: 2082, month: 12 } // Chaitra 2082
-
-    let checkYear = PAYROLL_START.year
-    let checkMonth = PAYROLL_START.month
-
-    // Walk forward from Chaitra 2082 until we find a month that hasn't been run
-    for (let i = 0; i < 24; i++) { // max 24 months lookahead
-      const key = `${checkYear}-${String(checkMonth).padStart(2, '0')}`
-      const hasRun = payrollRuns.some(r => r.monthKey === key)
-      if (!hasRun) {
-        // Only auto-set if we're not already viewing this month
-        if (selectedMonth?.year !== checkYear || selectedMonth?.month !== checkMonth) {
-          setSelectedMonth(checkYear, checkMonth)
-        }
-        break
-      }
-      checkMonth++
-      if (checkMonth > 12) { checkMonth = 1; checkYear++ }
+    if (selectedMonth && selectedMonth.year && selectedMonth.month) return
+    try {
+      const now = new Date()
+      const bs = adToBS(now)
+      setSelectedMonth(bs.year, bs.month)
+    } catch (e) {
+      // Fallback: do nothing if conversion fails
+      console.error('Failed to set selected month from current date:', e)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payrollRuns.length])
+  }, [])
 
   // ── YTD Data Aggregation ────────────────────────────────────────────────────
   const ytdMap = useMemo(() => {
@@ -148,7 +140,10 @@ export default function Payroll() {
     if (!monthKey || selectedEmpIds.length === 0) return
     setSaving(true)
     try {
-      const allResults = activeEmployees.map(emp => ({ ...emp, ...calcEmployee(emp, settings?.carLoanEMI || 62372) }))
+      const allResults = activeEmployees.map(emp => {
+        const ytd = ytdMap[emp.id] || { ytdTaxableIncome: 0, ytdTaxPaid: 0 }
+        return { ...emp, ...calcEmployee(emp, settings?.carLoanEMI || 62372, ytd) }
+      })
       const results    = allResults.filter(r => selectedEmpIds.includes(r.id)).map(r => {
         if (tdsSkipIds.includes(r.id)) {
           const tdsAmount = r.monthlyTDS || 0
@@ -160,11 +155,16 @@ export default function Payroll() {
       const depositTotals = getPayrollDeposits(results)
       const payrollTotalNetPay = results.reduce((s, r) => s + (r.netPay || 0), 0)
 
+      const today = todayString()
+      const bsRun = adToBS(today)
+
       const run = {
         monthKey,
         monthLabel,
-        bsYear:    selectedMonth.year,
-        bsMonth:   selectedMonth.month,
+        bsYear:    bsRun.year,
+        bsMonth:   bsRun.month,
+        bsDay:     bsRun.day,
+        bsMonthName: bsRun.monthName,
         results,
         deposits:  depositTotals,
         tdsStatus: 'pending',
@@ -177,7 +177,6 @@ export default function Payroll() {
       // Log total payroll salary expense for the run, including owner/CEO accruals.
       // Actual CEO salary withdrawals remain separate in the Salary Ledger.
       if (payrollTotalNetPay > 0) {
-        const today = todayString()
         await addDocument('expenses', {
           date:          today,
           category:      'Salary',
@@ -185,10 +184,10 @@ export default function Payroll() {
           amount:        payrollTotalNetPay,
           paymentSource: 'bank',
           type:          'expense',
-          bsYear:        selectedMonth.year,
-          bsMonth:       selectedMonth.month,
-          bsDay:         1,
-          bsMonthName:   BS_MONTHS[selectedMonth.month - 1],
+          bsYear:        bsRun.year,
+          bsMonth:       bsRun.month,
+          bsDay:         bsRun.day,
+          bsMonthName:   bsRun.monthName,
           linkedRun:     monthKey,
         })
       }
