@@ -86,7 +86,7 @@ export default function Inventory() {
       </div>
 
       <Card className="p-5">
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && !loading ? (
           <EmptyState icon={Package} title="No inventory items" description="Track all office assets and equipment here." action={<Button onClick={openAdd} icon={Plus}>Add Item</Button>} />
         ) : (
           <Table columns={columns} data={filtered} loading={loading} />

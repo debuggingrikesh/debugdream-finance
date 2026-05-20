@@ -110,9 +110,11 @@ export default function Payroll() {
   const deposits = useMemo(() => getPayrollDeposits(preview), [preview])
 
   const [selectedEmpIds, setSelectedEmpIds] = useState([])
+  const [tdsSkipIds, setTdsSkipIds] = useState([])
 
   const openRunModal = () => {
     setSelectedEmpIds(activeEmployees.map(e => e.id))
+    setTdsSkipIds([])
     setShowRunModal(true)
   }
 
@@ -122,9 +124,21 @@ export default function Payroll() {
     )
   }
 
+  const toggleTdsSkip = (id) => {
+    setTdsSkipIds(current =>
+      current.includes(id) ? current.filter(i => i !== id) : [...current, id]
+    )
+  }
+
   const selectedPreview = useMemo(() => {
-    return preview.filter(e => selectedEmpIds.includes(e.id))
-  }, [preview, selectedEmpIds])
+    return preview.filter(e => selectedEmpIds.includes(e.id)).map(e => {
+      if (tdsSkipIds.includes(e.id)) {
+        const tdsAmount = e.monthlyTDS || 0
+        return { ...e, monthlyTDS: 0, netPay: (e.netPay || 0) + tdsAmount, netPayMonthly: (e.netPayMonthly || 0) + tdsAmount, tdsSkipped: true }
+      }
+      return e
+    })
+  }, [preview, selectedEmpIds, tdsSkipIds])
 
   const selectedDeposits = useMemo(() => getPayrollDeposits(selectedPreview), [selectedPreview])
 
@@ -134,7 +148,13 @@ export default function Payroll() {
     setSaving(true)
     try {
       const allResults = activeEmployees.map(emp => ({ ...emp, ...calcEmployee(emp, settings?.carLoanEMI || 62372) }))
-      const results    = allResults.filter(r => selectedEmpIds.includes(r.id))
+      const results    = allResults.filter(r => selectedEmpIds.includes(r.id)).map(r => {
+        if (tdsSkipIds.includes(r.id)) {
+          const tdsAmount = r.monthlyTDS || 0
+          return { ...r, monthlyTDS: 0, netPay: (r.netPay || 0) + tdsAmount, netPayMonthly: (r.netPayMonthly || 0) + tdsAmount, tdsSkipped: true }
+        }
+        return r
+      })
       
       const depositTotals = getPayrollDeposits(results)
       const staffResults  = results.filter(r => !r.isOwner && r.id !== 'rikesh')
@@ -388,13 +408,17 @@ export default function Payroll() {
             Add Employee
           </Button>
         </div>
-        {employees.length === 0 ? (
+        {employees.length === 0 && !loading ? (
           <EmptyState
             icon={undefined}
             title="No employees yet"
             description="Add employees to run payroll."
             action={<Button size="sm" icon={Plus} onClick={() => { setEditEmployee(null); setShowEmployeeModal(true) }}>Add Employee</Button>}
           />
+        ) : loading ? (
+          <div className="space-y-2 py-4">
+            {[1, 2, 3].map(i => <div key={i} className="h-14 bg-bg-elevated rounded-xl animate-pulse" />)}
+          </div>
         ) : (
           <div className="space-y-2">
             {employees.map(emp => (
@@ -450,6 +474,9 @@ export default function Payroll() {
             {activeEmployees.map(emp => {
               const res = preview.find(p => p.id === emp.id)
               const selected = selectedEmpIds.includes(emp.id)
+              const tdsSkipped = tdsSkipIds.includes(emp.id)
+              const hasTDS = (res?.monthlyTDS || 0) > 0
+              const displayNet = tdsSkipped ? (res?.netPay || 0) + (res?.monthlyTDS || 0) : (res?.netPay || 0)
               return (
                 <button
                   key={emp.id}
@@ -468,9 +495,25 @@ export default function Payroll() {
                       <div className="text-[10px] text-text-muted">{emp.isOwner ? 'Liability Accrual' : 'Direct Cash Payout'}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-mono font-bold text-text-primary">{formatNPR(res?.netPay || 0)}</div>
-                    <div className="text-[10px] text-text-muted uppercase tracking-wider">Net</div>
+                  <div className="flex items-center gap-2">
+                    {selected && hasTDS && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleTdsSkip(emp.id) }}
+                        className={clsx(
+                          "text-[10px] px-2 py-1 rounded-lg border font-bold transition-all whitespace-nowrap",
+                          tdsSkipped
+                            ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                            : "bg-green-500/10 border-green-500/30 text-green-400"
+                        )}
+                        title={tdsSkipped ? 'TDS will NOT be deducted' : 'TDS will be deducted'}
+                      >
+                        TDS {tdsSkipped ? 'OFF' : 'ON'}
+                      </button>
+                    )}
+                    <div className="text-right">
+                      <div className="text-xs font-mono font-bold text-text-primary">{formatNPR(displayNet)}</div>
+                      <div className="text-[10px] text-text-muted uppercase tracking-wider">Net</div>
+                    </div>
                   </div>
                 </button>
               )

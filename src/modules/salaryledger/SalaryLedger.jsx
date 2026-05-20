@@ -1,6 +1,6 @@
 // ─── Rikesh's Salary Ledger ───────────────────────────────────────────────────
 import { useState } from 'react'
-import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown, RefreshCcw, Link } from 'lucide-react'
+import { BookOpen, Wallet, CreditCard, MinusCircle, Edit2, PlusCircle, ArrowUpDown, RefreshCcw, Link, ArrowDownCircle, Trash2 } from 'lucide-react'
 import { useSalaryLedger, useCarLoan } from '../../hooks/useFirestore'
 import { addDocument, updateDocument, deleteDocument } from '../../firebase/firestore'
 import { formatNPR } from '../../utils/formatUtils'
@@ -15,8 +15,10 @@ export default function SalaryLedger() {
   const [showPayment, setShowPayment] = useState(null)
   const [payForm, setPayForm] = useState({ amount: '', date: todayString(), source: 'bank' })
   const [saving, setSaving] = useState(false)
-  const [sortOrder, setSortOrder] = useState('desc') // 'desc' = newest first, 'asc' = oldest first
+  const [sortOrder, setSortOrder] = useState('desc')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [showWithdraw, setShowWithdraw] = useState(false)
+  const [withdrawForm, setWithdrawForm] = useState({ amount: '', date: todayString(), source: 'bank', note: '' })
 
   const AGREED_SALARY = 150000
   const currentEMI    = carLoan?.emiAmount || 0
@@ -36,19 +38,25 @@ export default function SalaryLedger() {
     return key
   }
 
-  const sorted = [...ledger].sort((a, b) => {
+  const monthEntries = ledger.filter(l => !l.isWithdrawal)
+  const withdrawals  = ledger.filter(l => l.isWithdrawal)
+
+  const sorted = [...monthEntries].sort((a, b) => {
     const keyA = extractMonthKey(a.monthLabel, a.monthKey)
     const keyB = extractMonthKey(b.monthLabel, b.monthKey)
     const cmp = (keyA || '').localeCompare(keyB || '')
     return sortOrder === 'desc' ? -cmp : cmp
   })
 
+  const sortedWithdrawals = [...withdrawals].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+
   // Computed Values
-  const totalAccrued    = ledger.reduce((s, l) => s + (l.grossAccrued || AGREED_SALARY), 0)
-  const totalEMIDeducted = ledger.reduce((s, l) => s + (l.carLoanEMI !== undefined ? l.carLoanEMI : currentEMI), 0)
-  const totalPaid       = ledger.reduce((s, l) => s + (l.totalPaid || 0), 0)
-  const netDueTotal     = totalAccrued - totalEMIDeducted
-  const netBalance      = netDueTotal - totalPaid
+  const totalAccrued     = monthEntries.reduce((s, l) => s + (l.grossAccrued || AGREED_SALARY), 0)
+  const totalEMIDeducted = monthEntries.reduce((s, l) => s + (l.carLoanEMI !== undefined ? l.carLoanEMI : currentEMI), 0)
+  const totalPaid        = monthEntries.reduce((s, l) => s + (l.totalPaid || 0), 0)
+  const totalWithdrawn   = withdrawals.reduce((s, w) => s + (w.amount || 0), 0)
+  const netDueTotal      = totalAccrued - totalEMIDeducted
+  const netBalance       = netDueTotal - totalPaid - totalWithdrawn
 
   const handleLogPayment = async () => {
     if (!showPayment || !payForm.amount) return
@@ -85,6 +93,48 @@ export default function SalaryLedger() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // ── Standalone Withdrawal ──────────────────────────────────────────────────
+  const handleWithdraw = async () => {
+    const amt = parseFloat(withdrawForm.amount)
+    if (!amt || amt <= 0 || amt > netBalance) return
+    setSaving(true)
+    try {
+      await addDocument('salaryLedger', {
+        isWithdrawal: true,
+        amount: amt,
+        date: withdrawForm.date,
+        source: withdrawForm.source,
+        note: withdrawForm.note || '',
+        addedAt: new Date().toISOString(),
+      })
+
+      // Automated expense entry
+      const bs = adToBS(withdrawForm.date)
+      await addDocument('expenses', {
+        date:          withdrawForm.date,
+        category:      'Salary',
+        description:   `CEO Salary Withdrawal${withdrawForm.note ? ' - ' + withdrawForm.note : ''}`,
+        amount:        amt,
+        paymentSource: withdrawForm.source,
+        type:          'expense',
+        bsYear:        bs.year,
+        bsMonth:       bs.month,
+        bsDay:         bs.day,
+        bsMonthName:   bs.monthName,
+      })
+
+      setShowWithdraw(false)
+      setWithdrawForm({ amount: '', date: todayString(), source: 'bank', note: '' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteWithdrawal = async (id) => {
+    if (!window.confirm('Delete this withdrawal record?')) return
+    await deleteDocument('salaryLedger', id)
   }
 
   const handleEditField = async (id, field, currentVal) => {
@@ -239,7 +289,29 @@ export default function SalaryLedger() {
     return <Badge variant="danger">Outstanding</Badge>
   }
 
-  if (ledgerLoading || loanLoading) return <div className="p-10 text-center text-text-muted">Loading ledger...</div>
+  if (ledgerLoading || loanLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in pb-20">
+        <SectionHeader 
+          title="Rikesh's Salary Ledger" 
+          subtitle="Tracking accruals at NPR 150,000/mo - Car EMI deductions" 
+        />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="p-4 h-24 bg-bg-surface/50 border-l-4 border-l-border" />
+          ))}
+        </div>
+        <Card className="p-5 animate-pulse">
+          <div className="h-6 bg-bg-elevated rounded w-1/4 mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-10 bg-bg-elevated rounded w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">
@@ -281,7 +353,22 @@ export default function SalaryLedger() {
         <Card className="p-4 bg-accent/5 border-l-4 border-l-accent shadow-lg shadow-accent/5">
           <div className="text-[10px] text-accent font-body uppercase tracking-wider mb-1 font-bold">Net Balance Owed</div>
           <div className="font-mono text-accent text-lg sm:text-2xl font-black">{formatNPR(netBalance)}</div>
-          <div className="text-[10px] text-accent/60 mt-1">Amount company owes you</div>
+          <div className="flex items-center justify-between mt-2">
+            <div className="text-[10px] text-accent/60">Amount company owes you</div>
+            <button
+              onClick={() => { setShowWithdraw(true); setWithdrawForm({ amount: '', date: todayString(), source: 'bank', note: '' }) }}
+              disabled={netBalance <= 0}
+              className={clsx(
+                "flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all",
+                netBalance > 0
+                  ? "bg-accent/20 border-accent/30 text-accent hover:bg-accent hover:text-white"
+                  : "bg-bg-elevated border-border text-text-muted cursor-not-allowed"
+              )}
+            >
+              <ArrowDownCircle size={12} />
+              Withdraw
+            </button>
+          </div>
         </Card>
       </div>
 
@@ -387,6 +474,47 @@ export default function SalaryLedger() {
         )}
       </Card>
 
+      {/* Withdrawals Section */}
+      {sortedWithdrawals.length > 0 && (
+        <Card className="p-4 md:p-5 border-l-4 border-l-green-500">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-display font-bold text-text-primary text-sm">Withdrawals</h3>
+              <p className="text-[10px] text-text-muted mt-0.5">Manual withdrawals from total balance</p>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Total Withdrawn</div>
+              <div className="font-mono text-green-400 font-bold text-lg">{formatNPR(totalWithdrawn)}</div>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {sortedWithdrawals.map(w => (
+              <div key={w.id} className="flex items-center justify-between p-3 bg-bg-elevated rounded-xl hover:bg-bg-hover transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <ArrowDownCircle size={14} className="text-green-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-text-primary">{formatNPR(w.amount)}</div>
+                    <div className="text-[10px] text-text-muted">
+                      {w.date} · <span className="capitalize">{w.source}</span>
+                      {w.note && <> · {w.note}</>}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteWithdrawal(w.id)}
+                  className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-text-muted hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Delete withdrawal"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Summary Footer */}
       <div className="flex justify-between items-center px-5">
         <div className="flex items-center gap-3 text-xs text-text-muted font-body">
@@ -446,6 +574,61 @@ export default function SalaryLedger() {
               ))}
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Withdraw Modal */}
+      <Modal
+        isOpen={showWithdraw}
+        onClose={() => setShowWithdraw(false)}
+        title="Withdraw from Balance"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowWithdraw(false)}>Cancel</Button>
+            <Button
+              onClick={handleWithdraw}
+              loading={saving}
+              disabled={!withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0 || parseFloat(withdrawForm.amount) > netBalance}
+            >
+              Confirm Withdrawal
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-bg-elevated rounded-2xl border border-border">
+            <div className="text-xs uppercase tracking-wider text-text-muted mb-1">Available Balance</div>
+            <div className="font-mono text-accent text-2xl font-black">{formatNPR(netBalance)}</div>
+          </div>
+
+          <Input label="Withdrawal Amount (NPR)" type="number" prefix="NPR" value={withdrawForm.amount} onChange={e => setWithdrawForm(f => ({ ...f, amount: e.target.value }))} />
+          <Input label="Date" type="date" value={withdrawForm.date} onChange={e => setWithdrawForm(f => ({ ...f, date: e.target.value }))} />
+          <Input label="Note (optional)" placeholder="e.g. Monthly expense" value={withdrawForm.note} onChange={e => setWithdrawForm(f => ({ ...f, note: e.target.value }))} />
+
+          <div>
+            <label className="text-[10px] text-text-muted font-body font-bold uppercase tracking-widest block mb-2 px-1">Source</label>
+            <div className="flex gap-2">
+              {['bank', 'cash'].map(s => (
+                <button key={s} onClick={() => setWithdrawForm(f => ({ ...f, source: s }))}
+                  className={clsx('flex-1 py-3 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2',
+                    withdrawForm.source === s ? 'bg-accent text-white border-accent' : 'bg-bg-elevated border-border text-text-muted hover:border-text-muted'
+                  )}>
+                  {s === 'bank' ? <BookOpen size={16} /> : <Wallet size={16} />}
+                  <span className="capitalize">{s}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
+            <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-xl">
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">After withdrawal</span>
+                <span className="font-mono text-accent font-bold">{formatNPR(netBalance - (parseFloat(withdrawForm.amount) || 0))}</span>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

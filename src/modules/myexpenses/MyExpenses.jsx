@@ -302,7 +302,7 @@ export default function MyExpenses() {
           {/* Entries */}
           <Card className="p-5">
             <h3 className="font-display font-bold text-text-primary text-sm mb-4">This Month's Entries</h3>
-            {activeEntries.length === 0 ? (
+            {activeEntries.length === 0 && !loading ? (
               <EmptyState
                 icon={Wallet}
                 title="No expenses yet"
@@ -310,7 +310,7 @@ export default function MyExpenses() {
                 action={<Button onClick={() => { setEditingEntry(null); setShowAdd(true); }} icon={Plus}>Add First Entry</Button>}
               />
             ) : (
-              <Table columns={activeColumns} data={activeEntries} />
+              <Table columns={activeColumns} data={activeEntries} loading={loading} />
             )}
           </Card>
         </>
@@ -322,7 +322,11 @@ export default function MyExpenses() {
           <div className="space-y-4">
             <Card className="p-4">
               <h3 className="font-display font-bold text-text-primary text-xs sm:text-sm mb-3 uppercase tracking-wider">Closed Months</h3>
-              {closedMonths.length === 0 ? (
+              {loading ? (
+                <div className="space-y-2 py-4">
+                  {[1, 2].map(i => <div key={i} className="h-10 bg-bg-elevated rounded-xl animate-pulse" />)}
+                </div>
+              ) : closedMonths.length === 0 ? (
                 <p className="text-text-muted text-sm font-body text-center py-6">No closed months yet</p>
               ) : (
                 <div className="space-y-1">

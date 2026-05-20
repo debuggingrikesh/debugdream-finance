@@ -48,7 +48,11 @@ export default function Reminders() {
         ))}
       </div>
 
-      {displayed.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => <div key={i} className="h-20 bg-bg-surface rounded-xl animate-pulse" />)}
+        </div>
+      ) : displayed.length === 0 ? (
         <EmptyState icon={Bell} title={tab === 'active' ? 'No active reminders' : 'No completed reminders'}
           description="Reminders are auto-created for TDS, SSF deposits, and overdue invoices."
           action={tab === 'active' && <Button onClick={() => setShowAdd(true)} icon={Plus}>Add Reminder</Button>} />

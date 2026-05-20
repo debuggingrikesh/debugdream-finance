@@ -181,7 +181,15 @@ export default function CarLoan() {
         }
       />
 
-      {!setup ? (
+      {loading ? (
+        <div className="space-y-4">
+          <Card className="p-5 md:p-6 animate-pulse space-y-4">
+            <div className="h-6 bg-bg-elevated rounded w-1/4" />
+            <div className="h-4 bg-bg-elevated rounded w-1/2" />
+            <div className="h-32 bg-bg-elevated rounded w-full" />
+          </Card>
+        </div>
+      ) : !setup ? (
         <EmptyState
           icon={Car}
           title="Car loan not configured"
